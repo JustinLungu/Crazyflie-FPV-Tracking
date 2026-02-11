@@ -1,0 +1,5 @@
+# ignore usual files
+.vscode/
+*.pyc
+__pycache__/
+*.log
