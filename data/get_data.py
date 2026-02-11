@@ -35,7 +35,7 @@ def main():
     width, height = 640, 480
     fps_hint = 30
 
-    out_root = Path("camera_feed/raw_data")
+    out_root = Path("data/raw_data")
     session_dir = make_session_dir(out_root)
     images_dir = session_dir / "images"
     meta_path = session_dir / "meta.csv"

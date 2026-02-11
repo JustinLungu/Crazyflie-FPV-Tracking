@@ -48,8 +48,8 @@ def is_near_black(frame) -> bool:
 
 def main():
     cfg = Config(
-        video_path=Path("camera_feed/raw_data/video_session_20260211_174944/video.avi"),
-        out_dir=Path("camera_feed/labels_session/"),
+        video_path=Path("data/raw_data/video_session_20260211_174944/video.avi"),
+        out_dir=Path("data/labels_session/"),
         export_fps=10.0,
         tracker_type="CSRT",    
     )

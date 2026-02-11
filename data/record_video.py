@@ -10,7 +10,7 @@ def main():
     fps = 30
     fourcc = "MJPG"
 
-    out_root = Path("camera_feed/raw_data")
+    out_root = Path("data/raw_data")
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     session_dir = out_root / f"video_session_{ts}"
     session_dir.mkdir(parents=True, exist_ok=True)
