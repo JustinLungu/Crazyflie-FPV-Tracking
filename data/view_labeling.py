@@ -1,27 +1,11 @@
-import argparse
-import csv
 from pathlib import Path
-
-import cv2
-
-from constants import (
-    LABEL_ALL_DATA_DIR,
-    LABEL_CLASS_NAME,
-    LABEL_SESSION_PREFIX,
-    OUT_DIR,
-    TRACK_REVIEW_DELAY_S,
-)
+from constants import *
 from utils import sanitize_class_folder_name
 
+import argparse
+import csv
+import cv2
 
-# Keyboard mappings from cv2.waitKeyEx across common Linux/OpenCV backends.
-KEY_QUIT = {ord("q"), 27}  # q, ESC
-KEY_TOGGLE_PLAY = {ord(" ")}
-KEY_PREV = {ord("a"), 2424832, 65361}
-KEY_NEXT = {ord("d"), 2555904, 65363}
-KEY_DELETE = {ord("x"), ord("X")}
-KEY_CONFIRM_YES = {ord("y"), ord("Y")}
-KEY_CONFIRM_NO = {ord("n"), ord("N"), 27}
 
 
 def parse_args() -> argparse.Namespace:

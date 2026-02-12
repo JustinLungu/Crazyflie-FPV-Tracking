@@ -35,4 +35,23 @@ STARTUP_PROBE_FRAMES = 30  # skip startup frames that are near-black/blank
 # Slow down preview to give operator more reaction time while validating tracking.
 TRACK_REVIEW_DELAY_S = 0.5 # 0.5s ~= 2 frames per second in review mode.
 
+
+
+
+########################################## Labeling Viewer Constants #######################################
+
+# Keyboard mappings from cv2.waitKeyEx across common Linux/OpenCV backends.
+KEY_QUIT = {ord("q"), 27}  # q, ESC
+KEY_TOGGLE_PLAY = {ord(" ")}
+KEY_PREV = {ord("a"), 2424832, 65361}
+KEY_NEXT = {ord("d"), 2555904, 65363}
+KEY_DELETE = {ord("x"), ord("X")}
+KEY_CONFIRM_YES = {ord("y"), ord("Y")}
+KEY_CONFIRM_NO = {ord("n"), ord("N"), 27}
+
+
+
+
+
+
 #######################################################################################################
