@@ -1,8 +1,7 @@
 import time
-from datetime import datetime
 from pathlib import Path
 from constants import *
-from utils import make_session_dir, open_camera
+from utils import make_session_dir, match_writer_fps, open_camera
 import cv2
 
 
@@ -11,15 +10,23 @@ def main():
     video_path = session_dir / VIDEO_FLIE_NAME
 
     cap = open_camera()
+    # Match file FPS to real capture throughput so playback speed stays natural.
+    # Note: probing reads a short burst of frames before recording starts.
+    writer_fps, driver_fps, measured_fps = match_writer_fps(cap)
 
     writer = cv2.VideoWriter(
         str(video_path),
         cv2.VideoWriter_fourcc(*FOURCC),
-        FPS_HINT,
+        # Use matched FPS here instead of FPS_HINT to avoid sped-up videos.
+        writer_fps,
         (WIDTH, HEIGHT),
     )
 
     print(f"Recording to {video_path}")
+    print(f"Requested FPS: {FPS_HINT}")
+    print(f"Driver FPS: {driver_fps:.2f}")
+    print(f"Measured capture FPS: {measured_fps:.2f}")
+    print(f"Writer FPS: {writer_fps:.2f}")
     print("Press q to stop")
 
     last_print = time.time()
