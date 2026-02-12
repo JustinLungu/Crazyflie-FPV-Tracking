@@ -7,8 +7,8 @@ import cv2
 
 
 def main():
-    video_path=Path(VIDEO_PATH),
-    out_dir=Path(OUT_DIR)
+    video_path = Path(VIDEO_PATH)
+    out_dir = Path(OUT_DIR)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     images_dir = out_dir / "images"
@@ -82,8 +82,11 @@ def main():
     print("q quit")
     print("r redraw bbox and reinit tracker")
     print("p pause or resume")
+    print(f"review delay per frame: {TRACK_REVIEW_DELAY_S:.2f}s")
 
     paused = False
+    # Keep UI responsive while intentionally slowing frame advance.
+    review_delay_ms = max(1, int(TRACK_REVIEW_DELAY_S * 1000))
 
     while True:
         if not paused:
@@ -109,8 +112,8 @@ def main():
         cv2.putText(display, f"frame {frame_index}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
 
         cv2.imshow("track_label", display)
-        # waitKey(0) while paused so stepping requires explicit key input.
-        key = cv2.waitKey(1 if not paused else 0) & 0xFF
+        # Slow playback to give operator correction time; block when paused.
+        key = cv2.waitKey(review_delay_ms if not paused else 0) & 0xFF
 
         if key == ord("q"):
             break

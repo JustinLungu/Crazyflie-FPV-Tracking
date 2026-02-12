@@ -99,7 +99,7 @@ def clamp_bbox(x, y, w, h, W, H):
 
 
 def yolo_line(class_id, x, y, w, h, W, H):
-    # Convert pixel bbox (x,y,w,h) to normalized cx cy w h YOLO format.
+    # Convert pixel bbox (x,y,w,h) to normalized [0,1] cx cy w h YOLO format.
     cx = (x + w / 2.0) / W
     cy = (y + h / 2.0) / H
     nw = w / W
