@@ -1,47 +1,20 @@
-import os
 import time
 import csv
-from datetime import datetime
 from pathlib import Path
 from constants import *
-
+from utils import make_session_dir, open_camera
 import cv2
 
 
 
-def make_session_dir(root: Path) -> Path:
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    session = root / f"images_session_{ts}"
-    (session / "images").mkdir(parents=True, exist_ok=True)
-    return session
-
-
-def open_camera() -> cv2.VideoCapture:
-    # Explicitly use V4L2 backend (important on Linux for /dev/videoX devices)
-    cap = cv2.VideoCapture(DEVICE, cv2.CAP_V4L2)
-
-    # Each frame is compressed independently as a JPEG image.
-    # So instead of sending raw pixels, the camera sends JPG frame
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
-    # Camera capture fps
-    cap.set(cv2.CAP_PROP_FPS, FPS_HINT)
-
-    # # Lower buffering = lower latency.
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-
-    return cap
-
 
 def main():
-    session_dir = make_session_dir(Path(RAW_DATA_ROOT))
+    session_dir = make_session_dir(Path(RAW_DATA_ROOT), "images")
+    # inside raw_data/
     images_dir = session_dir / "images"
     meta_path = session_dir / "meta.csv"
 
     cap = open_camera()
-    if not cap.isOpened():
-        raise RuntimeError(f"Could not open camera at {DEVICE}")
 
     # How often (in seconds) we want to save an image (ex: 10FPS -> every 0.1s)
     save_period = 1.0 / float(TARGET_FPS)
@@ -91,6 +64,7 @@ def main():
             print("Stopped by user.")
 
     cap.release()
+    print("Done")
 
 
 if __name__ == "__main__":
