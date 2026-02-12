@@ -13,7 +13,7 @@ VIDEO_FLIE_NAME = "video.avi"
 
 # Constants for tracker labeling
 # Input video to label and output folder for image/label pairs.
-VIDEO_PATH = "data/raw_data/video_session_20260211_174944/video.avi"
+VIDEO_PATH = "data/raw_data/black_video_session_20260211_183212/video.avi"
 # Root directory where all labeled outputs are stored.
 OUT_DIR = "data/labels"
 
@@ -28,7 +28,7 @@ LABEL_ALL_DATA_DIR = "all_data"
 LABEL_SESSION_PREFIX = "label_session_"
 
 # Export target FPS for sampled frames from the source video.
-EXPORT_FPS = 10.0
+EXPORT_FPS = 30.0
 
 TRACKER_TYPE = "CSRT" # CSRT/KCF/MOSSE need opencv-contrib;
 STARTUP_PROBE_FRAMES = 30  # skip startup frames that are near-black/blank
