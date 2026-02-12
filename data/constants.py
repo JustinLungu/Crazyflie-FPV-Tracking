@@ -1,3 +1,4 @@
+# Constants for video / image capture and storage
 DEVICE = "/dev/video1"
 TARGET_FPS = 10  # set 5 or 10 for labeling
 WIDTH, HEIGHT = 640, 480
@@ -6,3 +7,13 @@ RAW_DATA_ROOT = "data/raw_data"
 FOURCC = "MJPG"
 BUFFER_SIZE = 1
 VIDEO_FLIE_NAME = "video.avi"
+
+# Constants for tracker labeling
+# Input video to label and output folder for image/label pairs.
+VIDEO_PATH = "data/raw_data/video_session_20260211_174944/video.avi"
+OUT_DIR = "data/labels_session/"
+CLASS_ID = 1
+# Export target FPS for sampled frames from the source video.
+EXPORT_FPS = 10.0
+TRACKER_TYPE = "CSRT"  # CSRT is accurate, KCF is faster, MOSSE is fastest
+STARTUP_PROBE_FRAMES = 30  # skip startup frames that are near-black/blank

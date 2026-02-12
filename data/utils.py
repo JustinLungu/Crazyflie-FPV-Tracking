@@ -4,6 +4,7 @@ import time
 from constants import *
 import cv2
 
+################################ RECORDING DATASET #################################
 
 def make_session_dir(root: Path, save_type: str) -> Path:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -72,3 +73,40 @@ def match_writer_fps(cap: cv2.VideoCapture, min_fps: float = 1.0) -> tuple[float
         writer_fps = float(FPS_HINT)
 
     return writer_fps, driver_fps, measured_fps
+
+
+################################ TRACK AND LABEL VIDEO #################################
+
+def make_tracker(tracker_type: str):
+    # Tracker choice controls the speed/accuracy tradeoff during labeling.
+    t = tracker_type.upper()
+    if t == "CSRT":
+        return cv2.TrackerCSRT_create()
+    if t == "KCF":
+        return cv2.TrackerKCF_create()
+    if t == "MOSSE":
+        return cv2.TrackerMOSSE_create()
+    raise ValueError(f"Unknown tracker_type {tracker_type}")
+
+
+def clamp_bbox(x, y, w, h, W, H):
+    # Clamp the predicted box to stay inside the image
+    x = max(0, min(int(x), W - 1))
+    y = max(0, min(int(y), H - 1))
+    w = max(1, min(int(w), W - x))
+    h = max(1, min(int(h), H - y))
+    return x, y, w, h
+
+
+def yolo_line(class_id, x, y, w, h, W, H):
+    # Convert pixel bbox (x,y,w,h) to normalized cx cy w h YOLO format.
+    cx = (x + w / 2.0) / W
+    cy = (y + h / 2.0) / H
+    nw = w / W
+    nh = h / H
+    return f"{class_id} {cx:.6f} {cy:.6f} {nw:.6f} {nh:.6f}"
+
+
+def is_near_black(frame) -> bool:
+    # Analog receivers often output black frames during startup or if the channel is wrong.
+    return float(frame.mean()) < 25.0 and (int(frame.max()) - int(frame.min())) < 8
