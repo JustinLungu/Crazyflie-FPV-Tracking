@@ -3,8 +3,10 @@ import time
 import csv
 from datetime import datetime
 from pathlib import Path
+from constants import *
 
 import cv2
+
 
 
 def make_session_dir(root: Path) -> Path:
@@ -14,41 +16,43 @@ def make_session_dir(root: Path) -> Path:
     return session
 
 
-def open_camera(device: str, width: int, height: int, fps_hint: int) -> cv2.VideoCapture:
-    cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
+def open_camera() -> cv2.VideoCapture:
+    # Explicitly use V4L2 backend (important on Linux for /dev/videoX devices)
+    cap = cv2.VideoCapture(DEVICE, cv2.CAP_V4L2)
 
-    # Ask for MJPEG if supported, reduces USB bandwidth and CPU in many cases
+    # Each frame is compressed independently as a JPEG image.
+    # So instead of sending raw pixels, the camera sends JPG frame
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-    cap.set(cv2.CAP_PROP_FPS, fps_hint)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+    # Camera capture fps
+    cap.set(cv2.CAP_PROP_FPS, FPS_HINT)
 
-    # Try to reduce internal buffering if backend supports it
+    # # Lower buffering = lower latency.
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     return cap
 
 
 def main():
-    device = "/dev/video1"
-    target_fps = 10  # set 5 or 10 for labeling
-    width, height = 640, 480
-    fps_hint = 30
-
-    out_root = Path("data/raw_data")
-    session_dir = make_session_dir(out_root)
+    session_dir = make_session_dir(Path(RAW_DATA_ROOT))
     images_dir = session_dir / "images"
     meta_path = session_dir / "meta.csv"
 
-    cap = open_camera(device, width, height, fps_hint)
+    cap = open_camera()
     if not cap.isOpened():
-        raise RuntimeError(f"Could not open camera at {device}")
+        raise RuntimeError(f"Could not open camera at {DEVICE}")
 
-    save_period = 1.0 / float(target_fps)
+    # How often (in seconds) we want to save an image (ex: 10FPS -> every 0.1s)
+    save_period = 1.0 / float(TARGET_FPS)
+    # Always increasing, never jumps backwards
     next_save_t = time.monotonic()
 
     with open(meta_path, "w", newline="") as f:
         writer = csv.writer(f)
+
+        # t_wall = gives real world clock time (good for syncing with other systems)
+        # t_mono = continuously increasing stopwatch (good for latency measurement)
         writer.writerow(["frame_idx", "filename", "t_wall", "t_mono"])
 
         frame_idx = 0
@@ -75,6 +79,7 @@ def main():
                     cv2.imwrite(str(out_path), frame, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
 
                     writer.writerow([frame_idx, filename, f"{t_wall:.6f}", f"{now_mono:.6f}"])
+                    # Safer if crash occurs, but slightly slower
                     f.flush()
 
                     saved_idx += 1
