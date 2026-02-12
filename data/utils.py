@@ -77,6 +77,31 @@ def match_writer_fps(cap: cv2.VideoCapture, min_fps: float = 1.0) -> tuple[float
 
 ################################ TRACK AND LABEL VIDEO #################################
 
+def sanitize_class_folder_name(name: str) -> str:
+    """Convert class name into a safe folder name for local filesystem use."""
+    cleaned = name.strip()
+    cleaned = cleaned.replace("/", "_").replace("\\", "_")
+    return cleaned if cleaned else "unnamed_class"
+
+
+def create_unique_label_session_dir(labels_root: Path, class_name: str) -> Path:
+    """Create labels/<class_name>/all_data/<label_session_timestamp[_NN]> without overwriting."""
+    safe_class_name = sanitize_class_folder_name(class_name)
+    class_dir = labels_root / safe_class_name
+    all_data_dir = class_dir / LABEL_ALL_DATA_DIR
+    all_data_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    session_dir = all_data_dir / f"{LABEL_SESSION_PREFIX}{timestamp}"
+    suffix = 1
+    while session_dir.exists():
+        session_dir = all_data_dir / f"{LABEL_SESSION_PREFIX}{timestamp}_{suffix:02d}"
+        suffix += 1
+
+    session_dir.mkdir(parents=True, exist_ok=False)
+    return session_dir
+
+
 def make_tracker(tracker_type: str):
     # Tracker choice controls the speed/accuracy tradeoff during labeling.
     t = tracker_type.upper()

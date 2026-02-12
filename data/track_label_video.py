@@ -1,18 +1,18 @@
+from datetime import datetime
 from pathlib import Path
 from constants import *
-from utils import clamp_bbox, is_near_black, make_tracker, yolo_line
+from utils import *
 import csv
 import cv2
 
 
-
 def main():
     video_path = Path(VIDEO_PATH)
-    out_dir = Path(OUT_DIR)
+    labels_root = Path(OUT_DIR)
+    session_dir = create_unique_label_session_dir(labels_root, LABEL_CLASS_NAME)
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    images_dir = out_dir / "images"
-    labels_dir = out_dir / "labels"
+    images_dir = session_dir / "images"
+    labels_dir = session_dir / "labels"
     images_dir.mkdir(exist_ok=True)
     labels_dir.mkdir(exist_ok=True)
 
@@ -66,7 +66,7 @@ def main():
     tracker = make_tracker(TRACKER_TYPE)
     tracker.init(frame, init_box)
 
-    meta_path = out_dir / "meta.csv"
+    meta_path = session_dir / "meta.csv"
     # Per-export bookkeeping: which source frame produced each saved sample.
     meta_f = open(meta_path, "w", newline="")
     meta = csv.writer(meta_f)
@@ -78,6 +78,11 @@ def main():
     export_index = 0
 
     print("Controls")
+    class_name = sanitize_class_folder_name(LABEL_CLASS_NAME)
+    class_dir = labels_root / class_name
+    print(f"class folder: {class_dir}")
+    print(f"all_data dir: {class_dir / LABEL_ALL_DATA_DIR}")
+    print(f"session dir: {session_dir}")
     # Keep controls printed here so the operator can recover quickly if tracking drops.
     print("q quit")
     print("r redraw bbox and reinit tracker")
@@ -158,7 +163,7 @@ def main():
     meta_f.close()
     cap.release()
     cv2.destroyAllWindows()
-    print(f"Saved to {out_dir}")
+    print(f"Saved to {session_dir}")
 
 
 if __name__ == "__main__":
