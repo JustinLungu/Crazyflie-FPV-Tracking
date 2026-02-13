@@ -71,6 +71,10 @@ GDRIVE_UPLOAD_MIME_TYPE = "application/zip"
 GDRIVE_UPLOAD_RESPONSE_FIELDS = "id,name"
 GDRIVE_SUPPORTS_ALL_DRIVES = True
 
+GDRIVE_FOLDER_ID_PATH_REGEX = r"/folders/([A-Za-z0-9_-]+)"
+GDRIVE_FOLDER_ID_RAW_REGEX = r"[A-Za-z0-9_-]{10,}"
+GDRIVE_FOLDER_QUERY_KEYS = ("id", "folder")
+
 # Temporary directory prefix when building transient archives.
 BACKUP_TEMP_DIR_PREFIX = "dataset_backup_"
 

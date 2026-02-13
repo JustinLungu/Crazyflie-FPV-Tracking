@@ -5,30 +5,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
-
-from constants import (
-    BACKUP_ARCHIVE_FORMAT,
-    BACKUP_DATE_FORMAT,
-    BACKUP_LABELS_SUFFIX,
-    BACKUP_PREFIX,
-    BACKUP_RAW_SUFFIX,
-    BACKUP_TEMP_DIR_PREFIX,
-    ENV_FILE_PATH,
-    GDRIVE_CREDENTIALS_PATH,
-    GDRIVE_FOLDER_URL_ENV_KEY,
-    GDRIVE_SCOPES,
-    GDRIVE_SUPPORTS_ALL_DRIVES,
-    GDRIVE_TOKEN_PATH,
-    GDRIVE_UPLOAD_MIME_TYPE,
-    GDRIVE_UPLOAD_RESPONSE_FIELDS,
-    OUT_DIR,
-    RAW_DATA_ROOT,
-)
-
-# URL parsing details kept local to avoid cluttering global constants.
-_GDRIVE_FOLDER_ID_PATH_REGEX = r"/folders/([A-Za-z0-9_-]+)"
-_GDRIVE_FOLDER_ID_RAW_REGEX = r"[A-Za-z0-9_-]{10,}"
-_GDRIVE_FOLDER_QUERY_KEYS = ("id", "folder")
+from constants import *
 
 
 def load_env_file(env_path: Path) -> None:
@@ -59,16 +36,16 @@ def get_drive_folder_ref(env_path: Path) -> str:
 
 def extract_drive_folder_id(folder_url_or_id: str) -> str:
     token = folder_url_or_id.strip()
-    if re.fullmatch(_GDRIVE_FOLDER_ID_RAW_REGEX, token):
+    if re.fullmatch(GDRIVE_FOLDER_ID_RAW_REGEX, token):
         return token
 
     parsed = urlparse(token)
-    match = re.search(_GDRIVE_FOLDER_ID_PATH_REGEX, parsed.path)
+    match = re.search(GDRIVE_FOLDER_ID_PATH_REGEX, parsed.path)
     if match:
         return match.group(1)
 
     query = parse_qs(parsed.query)
-    for key in _GDRIVE_FOLDER_QUERY_KEYS:
+    for key in GDRIVE_FOLDER_QUERY_KEYS:
         if key in query and query[key]:
             return query[key][0]
 
