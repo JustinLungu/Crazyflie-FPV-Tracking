@@ -50,6 +50,30 @@ KEY_CONFIRM_YES = {ord("y"), ord("Y")}
 KEY_CONFIRM_NO = {ord("n"), ord("N"), 27}
 
 
+########################################## Drive Backup Constants ###########################################
+
+# Name template: <BACKUP_PREFIX>_<ddmmyyyy>_<suffix>.zip
+BACKUP_PREFIX = "dataset_backup"
+BACKUP_DATE_FORMAT = "%d%m%Y"
+BACKUP_RAW_SUFFIX = "raw_data"
+BACKUP_LABELS_SUFFIX = "labels"
+BACKUP_ARCHIVE_FORMAT = "zip"
+
+# Environment configuration for private Drive target.
+ENV_FILE_PATH = ".env"
+GDRIVE_FOLDER_URL_ENV_KEY = "GOOGLE_DRIVE_FOLDER_URL"
+
+# OAuth files for Google Drive API.
+GDRIVE_CREDENTIALS_PATH = "data/gdrive_credentials.json"
+GDRIVE_TOKEN_PATH = "data/gdrive_token.json"
+GDRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
+GDRIVE_UPLOAD_MIME_TYPE = "application/zip"
+GDRIVE_UPLOAD_RESPONSE_FIELDS = "id,name"
+GDRIVE_SUPPORTS_ALL_DRIVES = True
+
+# Temporary directory prefix when building transient archives.
+BACKUP_TEMP_DIR_PREFIX = "dataset_backup_"
+
 
 
 

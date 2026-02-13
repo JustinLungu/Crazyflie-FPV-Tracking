@@ -4,3 +4,6 @@
 __pycache__/
 *.log
 .venv/
+.env
+data/gdrive_credentials.json
+data/gdrive_token.json
