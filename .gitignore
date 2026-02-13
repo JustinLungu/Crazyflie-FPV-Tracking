@@ -1,9 +1,16 @@
-# ignore usual files
+# Usual files
 .vscode/
 *.pyc
 __pycache__/
 *.log
 .venv/
+
+
+# Google drive data backup 
 .env
 data/gdrive_credentials.json
 data/gdrive_token.json
+
+# YOLO
+*.pt
+runs/

@@ -82,4 +82,46 @@ BACKUP_TEMP_DIR_PREFIX = "dataset_backup_"
 
 
 
+########################################## YOLO Dataset/Training Constants ################################
+
+# Class folder and dataset names under data/labels/.
+YOLO_TARGET_CLASS_NAME = "black_drone"
+YOLO_SOURCE_DATASET_NAME = "black_drone_dataset"
+YOLO_OUTPUT_DATASET_NAME = "black_drone_yolo"
+YOLO_DATASET_YAML_NAME = "dataset.yaml"
+YOLO_OVERWRITE_OUTPUT = True
+
+# Optional filter: leave empty tuple to include all source sessions from manifest.csv.
+YOLO_INCLUDED_SESSIONS = ()
+
+# Split configuration for train/val/test.
+YOLO_SPLIT_SEED = 42
+YOLO_TRAIN_RATIO = 0.70
+YOLO_VAL_RATIO = 0.20
+YOLO_TEST_RATIO = 0.10
+
+# Prefer session-level split to avoid leakage between temporally-adjacent frames.
+YOLO_MIN_SESSIONS_FOR_GROUP_SPLIT = 3
+YOLO_FALLBACK_TO_FRAME_SPLIT_IF_FEW_SESSIONS = True
+
+# Single-class remap: force all labels to class 0 in generated YOLO split.
+YOLO_SINGLE_CLASS_MODE = True
+YOLO_TARGET_CLASS_ID = 0
+YOLO_TARGET_CLASS_LABEL = "black_drone"
+
+# Training defaults for local GPU fine-tuning.
+YOLO_TRAIN_MODEL = "yolo26s.pt"
+YOLO_IMG_SIZE = 960
+YOLO_EPOCHS = 150
+YOLO_BATCH = 4
+YOLO_DEVICE = 0
+YOLO_WORKERS = 2
+YOLO_PATIENCE = 30
+YOLO_CACHE_IMAGES = False
+YOLO_PROJECT_DIR = "runs/detect"
+YOLO_RUN_NAME = "black_drone_yolo26s"
+
+
+
+
 #######################################################################################################
