@@ -59,15 +59,7 @@ def require_dataset_yaml(
 
 
 def load_ultralytics_yolo():
-    try:
-        from ultralytics import YOLO
-    except ImportError as exc:
-        raise RuntimeError(
-            "Ultralytics is not installed.\n"
-            "Install it with:\n"
-            "  uv add ultralytics\n"
-            "Then run this script again."
-        ) from exc
+    from ultralytics import YOLO
     return YOLO
 
 

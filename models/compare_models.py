@@ -1,30 +1,17 @@
 from pathlib import Path
 from time import perf_counter
 
-try:
-    from .constants import *
-    from .utils import (
-        format_metric,
-        format_time_ms,
-        load_ultralytics_yolo,
-        print_comparison_table,
-        require_dataset_yaml,
-        resolve_model_reference,
-        resolve_repo_path,
-        sanitize_token,
-    )
-except ImportError:
-    from constants import *
-    from utils import (
-        format_metric,
-        format_time_ms,
-        load_ultralytics_yolo,
-        print_comparison_table,
-        require_dataset_yaml,
-        resolve_model_reference,
-        resolve_repo_path,
-        sanitize_token,
-    )
+from constants import *
+from utils import (
+    format_metric,
+    format_time_ms,
+    load_ultralytics_yolo,
+    print_comparison_table,
+    require_dataset_yaml,
+    resolve_model_reference,
+    resolve_repo_path,
+    sanitize_token,
+)
 
 
 def main() -> None:

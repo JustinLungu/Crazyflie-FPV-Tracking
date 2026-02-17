@@ -1,9 +1,5 @@
-try:
-    from .constants import *
-    from .utils import *
-except ImportError:
-    from constants import *
-    from utils import *
+from constants import *
+from utils import *
 
 
 def main() -> None:
