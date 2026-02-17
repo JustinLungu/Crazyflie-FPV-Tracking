@@ -39,3 +39,15 @@ YOLO_TEST_BATCH = 4
 YOLO_TEST_CONF = 0.001
 YOLO_TEST_IOU = 0.7
 YOLO_TEST_RUN_NAME = "black_drone_yolo26s_test"
+
+
+########################################## Multi-Model Comparison Constants ###############################
+
+# Evaluate all listed models on the same dataset split and print one summary table.
+YOLO_COMPARE_MODEL_REFS = (
+    YOLO_TEST_WEIGHTS,
+    "runs/detect/runs/detect/black_drone_yolo26s/weights/last.pt",
+    "yolo26n.pt",
+    "yolo26s.pt",
+)
+YOLO_COMPARE_RUN_PREFIX = "black_drone_compare"
