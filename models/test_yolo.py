@@ -1,55 +1,18 @@
-from pathlib import Path
-
 try:
     from .constants import *
+    from .utils import *
 except ImportError:
     from constants import *
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
-
-def sanitize_class_folder_name(name: str) -> str:
-    cleaned = name.strip()
-    cleaned = cleaned.replace("/", "_").replace("\\", "_")
-    return cleaned if cleaned else "unnamed_class"
-
-
-def resolve_repo_path(path_like: str) -> Path:
-    path = Path(path_like)
-    return path if path.is_absolute() else (REPO_ROOT / path)
-
-
-def load_ultralytics_yolo():
-    try:
-        from ultralytics import YOLO
-    except ImportError as exc:
-        raise RuntimeError(
-            "Ultralytics is not installed.\n"
-            "Install it with:\n"
-            "  uv add ultralytics\n"
-            "Then run this script again."
-        ) from exc
-    return YOLO
-
-
-def resolve_model_reference(model_ref: str) -> str:
-    # Treat relative paths as repo-root based, so script works from any cwd.
-    ref_path = resolve_repo_path(model_ref)
-    if ref_path.exists():
-        return str(ref_path)
-    return model_ref
+    from utils import *
 
 
 def main() -> None:
-    class_name = sanitize_class_folder_name(YOLO_TARGET_CLASS_NAME)
-    dataset_root = resolve_repo_path(YOLO_LABELS_ROOT) / class_name / YOLO_OUTPUT_DATASET_NAME
-    dataset_yaml = dataset_root / YOLO_DATASET_YAML_NAME
-
-    if not dataset_yaml.exists():
-        raise RuntimeError(
-            f"Missing YOLO dataset yaml: {dataset_yaml}\n"
-            "Run `uv run python data/prepare_yolo_dataset.py` first."
-        )
+    dataset_yaml = require_dataset_yaml(
+        labels_root=YOLO_LABELS_ROOT,
+        target_class_name=YOLO_TARGET_CLASS_NAME,
+        output_dataset_name=YOLO_OUTPUT_DATASET_NAME,
+        dataset_yaml_name=YOLO_DATASET_YAML_NAME,
+    )
 
     model_ref = resolve_model_reference(YOLO_TEST_WEIGHTS)
     YOLO = load_ultralytics_yolo()

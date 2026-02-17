@@ -3,117 +3,37 @@ from time import perf_counter
 
 try:
     from .constants import *
+    from .utils import (
+        format_metric,
+        format_time_ms,
+        load_ultralytics_yolo,
+        print_comparison_table,
+        require_dataset_yaml,
+        resolve_model_reference,
+        resolve_repo_path,
+        sanitize_token,
+    )
 except ImportError:
     from constants import *
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
-
-def sanitize_class_folder_name(name: str) -> str:
-    cleaned = name.strip()
-    cleaned = cleaned.replace("/", "_").replace("\\", "_")
-    return cleaned if cleaned else "unnamed_class"
-
-
-def sanitize_token(name: str) -> str:
-    safe = "".join(ch if (ch.isalnum() or ch in ("-", "_")) else "_" for ch in name)
-    safe = safe.strip("_")
-    return safe if safe else "model"
-
-
-def resolve_repo_path(path_like: str) -> Path:
-    path = Path(path_like)
-    return path if path.is_absolute() else (REPO_ROOT / path)
-
-
-def resolve_model_reference(model_ref: str) -> str:
-    ref_path = resolve_repo_path(model_ref)
-    if ref_path.exists():
-        return str(ref_path)
-    return model_ref
-
-
-def load_ultralytics_yolo():
-    try:
-        from ultralytics import YOLO
-    except ImportError as exc:
-        raise RuntimeError(
-            "Ultralytics is not installed.\n"
-            "Install it with:\n"
-            "  uv add ultralytics\n"
-            "Then run this script again."
-        ) from exc
-    return YOLO
-
-
-def f4(value: float | None) -> str:
-    return "n/a" if value is None else f"{value:.4f}"
-
-
-def f2(value: float | None) -> str:
-    return "n/a" if value is None else f"{value:.2f}"
-
-
-def print_table(rows: list[dict]) -> None:
-    headers = [
-        ("model", 42),
-        ("P", 7),
-        ("R", 7),
-        ("mAP50", 9),
-        ("mAP50-95", 11),
-        ("infer_ms", 10),
-        ("status", 10),
-    ]
-
-    def pad(text: str, width: int) -> str:
-        if len(text) > width:
-            return text[: width - 1] + "…"
-        return text.ljust(width)
-
-    header_line = " | ".join(pad(label, width) for label, width in headers)
-    sep_line = "-+-".join("-" * width for _, width in headers)
-    print(header_line)
-    print(sep_line)
-
-    for row in rows:
-        model_name = row.get("model_name", "unknown")
-        status = row.get("status", "ok")
-        if status != "ok":
-            line = [
-                pad(model_name, headers[0][1]),
-                pad("n/a", headers[1][1]),
-                pad("n/a", headers[2][1]),
-                pad("n/a", headers[3][1]),
-                pad("n/a", headers[4][1]),
-                pad("n/a", headers[5][1]),
-                pad("FAILED", headers[6][1]),
-            ]
-            print(" | ".join(line))
-            print(f"    error: {row.get('error', 'unknown error')}")
-            continue
-
-        line = [
-            pad(model_name, headers[0][1]),
-            pad(f4(row.get("precision")), headers[1][1]),
-            pad(f4(row.get("recall")), headers[2][1]),
-            pad(f4(row.get("map50")), headers[3][1]),
-            pad(f4(row.get("map5095")), headers[4][1]),
-            pad(f2(row.get("inference_ms")), headers[5][1]),
-            pad("ok", headers[6][1]),
-        ]
-        print(" | ".join(line))
+    from utils import (
+        format_metric,
+        format_time_ms,
+        load_ultralytics_yolo,
+        print_comparison_table,
+        require_dataset_yaml,
+        resolve_model_reference,
+        resolve_repo_path,
+        sanitize_token,
+    )
 
 
 def main() -> None:
-    class_name = sanitize_class_folder_name(YOLO_TARGET_CLASS_NAME)
-    dataset_root = resolve_repo_path(YOLO_LABELS_ROOT) / class_name / YOLO_OUTPUT_DATASET_NAME
-    dataset_yaml = dataset_root / YOLO_DATASET_YAML_NAME
-
-    if not dataset_yaml.exists():
-        raise RuntimeError(
-            f"Missing YOLO dataset yaml: {dataset_yaml}\n"
-            "Run `uv run python data/prepare_yolo_dataset.py` first."
-        )
+    dataset_yaml = require_dataset_yaml(
+        labels_root=YOLO_LABELS_ROOT,
+        target_class_name=YOLO_TARGET_CLASS_NAME,
+        output_dataset_name=YOLO_OUTPUT_DATASET_NAME,
+        dataset_yaml_name=YOLO_DATASET_YAML_NAME,
+    )
 
     if not YOLO_COMPARE_MODEL_REFS:
         raise RuntimeError("YOLO_COMPARE_MODEL_REFS is empty in models/constants.py.")
@@ -175,7 +95,7 @@ def main() -> None:
 
     print()
     print("Comparison results:")
-    print_table(results)
+    print_comparison_table(results)
 
     ok_rows = [r for r in results if r.get("status") == "ok"]
     if ok_rows:
@@ -184,11 +104,11 @@ def main() -> None:
         print("Best by mAP50-95:")
         print(
             f"- {best['model_name']} | "
-            f"mAP50-95={f4(best.get('map5095'))} | "
-            f"mAP50={f4(best.get('map50'))} | "
-            f"P={f4(best.get('precision'))} | "
-            f"R={f4(best.get('recall'))} | "
-            f"infer_ms={f2(best.get('inference_ms'))}"
+            f"mAP50-95={format_metric(best.get('map5095'))} | "
+            f"mAP50={format_metric(best.get('map50'))} | "
+            f"P={format_metric(best.get('precision'))} | "
+            f"R={format_metric(best.get('recall'))} | "
+            f"infer_ms={format_time_ms(best.get('inference_ms'))}"
         )
     else:
         print()
