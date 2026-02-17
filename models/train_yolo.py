@@ -1,12 +1,22 @@
 from pathlib import Path
 
-from constants import *
+try:
+    from .constants import *
+except ImportError:
+    from constants import *
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def sanitize_class_folder_name(name: str) -> str:
     cleaned = name.strip()
     cleaned = cleaned.replace("/", "_").replace("\\", "_")
     return cleaned if cleaned else "unnamed_class"
+
+
+def resolve_repo_path(path_like: str) -> Path:
+    path = Path(path_like)
+    return path if path.is_absolute() else (REPO_ROOT / path)
 
 
 def load_ultralytics_yolo():
@@ -24,7 +34,7 @@ def load_ultralytics_yolo():
 
 def main() -> None:
     class_name = sanitize_class_folder_name(YOLO_TARGET_CLASS_NAME)
-    dataset_root = Path(OUT_DIR) / class_name / YOLO_OUTPUT_DATASET_NAME
+    dataset_root = resolve_repo_path(YOLO_LABELS_ROOT) / class_name / YOLO_OUTPUT_DATASET_NAME
     dataset_yaml = dataset_root / YOLO_DATASET_YAML_NAME
 
     if not dataset_yaml.exists():
@@ -45,8 +55,8 @@ def main() -> None:
         workers=YOLO_WORKERS,
         patience=YOLO_PATIENCE,
         cache=YOLO_CACHE_IMAGES,
-        project=YOLO_PROJECT_DIR,
-        name=YOLO_RUN_NAME,
+        project=str(resolve_repo_path(YOLO_PROJECT_DIR)),
+        name=YOLO_TRAIN_RUN_NAME,
         exist_ok=True,
     )
 
