@@ -82,7 +82,7 @@ BACKUP_TEMP_DIR_PREFIX = "dataset_backup_"
 
 
 
-########################################## YOLO Dataset/Training Constants ################################
+########################################## YOLO Dataset Prep Constants ####################################
 
 # Class folder and dataset names under data/labels/.
 YOLO_TARGET_CLASS_NAME = "black_drone"
@@ -108,18 +108,6 @@ YOLO_FALLBACK_TO_FRAME_SPLIT_IF_FEW_SESSIONS = True
 YOLO_SINGLE_CLASS_MODE = True
 YOLO_TARGET_CLASS_ID = 0
 YOLO_TARGET_CLASS_LABEL = "black_drone"
-
-# Training defaults for local GPU fine-tuning.
-YOLO_TRAIN_MODEL = "yolo26s.pt"
-YOLO_IMG_SIZE = 960
-YOLO_EPOCHS = 150
-YOLO_BATCH = 4
-YOLO_DEVICE = 0
-YOLO_WORKERS = 2
-YOLO_PATIENCE = 30
-YOLO_CACHE_IMAGES = False
-YOLO_PROJECT_DIR = "runs/detect"
-YOLO_RUN_NAME = "black_drone_yolo26s"
 
 
 
