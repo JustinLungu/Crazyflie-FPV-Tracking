@@ -23,22 +23,32 @@ YOLO_WORKERS = 2
 YOLO_PATIENCE = 30
 YOLO_CACHE_IMAGES = False
 
-# Output run naming.
-# Use "runs" (not "runs/detect") to avoid nested "runs/detect/runs/detect/...".
-YOLO_PROJECT_DIR = "runs"
-YOLO_TRAIN_RUN_NAME = "black_drone_yolo26s"
+# Output folder structure under runs/:
+# runs/models/<train_label>_<date>/
+# runs/comparison/<comparison_label>_<date>/...
+YOLO_RUNS_ROOT = "runs"
+YOLO_MODELS_RUNS_DIR = "models"
+YOLO_COMPARISON_RUNS_DIR = "comparison"
+YOLO_RUN_DATE_FORMAT = "%Y%m%d_%H%M%S"
+
+# Base labels used for dated folder names.
+YOLO_TRAIN_RUN_LABEL = "black_drone_yolo26s"
 
 
 ########################################## Test/Eval Constants ############################################
 
 # Which trained weights to evaluate on the test split.
-# Can be a local path (best.pt/last.pt) or a model alias.
-YOLO_TEST_WEIGHTS = "runs/detect/runs/detect/black_drone_yolo26s/weights/best.pt"
+# Accepted values:
+# - "latest_best": latest run in runs/models/*, best.pt
+# - "latest_last": latest run in runs/models/*, last.pt
+# - explicit local path to .pt
+# - Ultralytics model alias (e.g. yolo26s.pt)
+YOLO_TEST_WEIGHTS = "latest_best"
 YOLO_TEST_SPLIT = "test"  # "val" or "test"
 YOLO_TEST_BATCH = 4
 YOLO_TEST_CONF = 0.001
 YOLO_TEST_IOU = 0.7
-YOLO_TEST_RUN_NAME = "black_drone_yolo26s_test"
+YOLO_TEST_RUN_LABEL = "black_drone_eval"
 
 
 ########################################## Multi-Model Comparison Constants ###############################
@@ -46,8 +56,8 @@ YOLO_TEST_RUN_NAME = "black_drone_yolo26s_test"
 # Evaluate all listed models on the same dataset split and print one summary table.
 YOLO_COMPARE_MODEL_REFS = (
     YOLO_TEST_WEIGHTS,
-    "runs/detect/runs/detect/black_drone_yolo26s/weights/last.pt",
+    "latest_last",
     "yolo26n.pt",
     "yolo26s.pt",
 )
-YOLO_COMPARE_RUN_PREFIX = "black_drone_compare"
+YOLO_COMPARE_RUN_LABEL = "black_drone_compare"

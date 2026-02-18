@@ -85,9 +85,9 @@ BACKUP_TEMP_DIR_PREFIX = "dataset_backup_"
 ########################################## YOLO Dataset Prep Constants ####################################
 
 # Class folder and dataset names under data/labels/.
-YOLO_TARGET_CLASS_NAME = "black_drone"
-YOLO_SOURCE_DATASET_NAME = "black_drone_dataset"
-YOLO_OUTPUT_DATASET_NAME = "black_drone_yolo"
+YOLO_TARGET_CLASS_NAME = "green_drone"
+YOLO_SOURCE_DATASET_NAME = YOLO_TARGET_CLASS_NAME + "_dataset"
+YOLO_OUTPUT_DATASET_NAME = YOLO_TARGET_CLASS_NAME + "_yolo"
 YOLO_DATASET_YAML_NAME = "dataset.yaml"
 YOLO_OVERWRITE_OUTPUT = True
 
@@ -107,9 +107,6 @@ YOLO_FALLBACK_TO_FRAME_SPLIT_IF_FEW_SESSIONS = True
 # Single-class remap: force all labels to class 0 in generated YOLO split.
 YOLO_SINGLE_CLASS_MODE = True
 YOLO_TARGET_CLASS_ID = 0
-YOLO_TARGET_CLASS_LABEL = "black_drone"
-
-
 
 
 #######################################################################################################

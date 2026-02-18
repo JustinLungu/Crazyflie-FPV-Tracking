@@ -342,7 +342,7 @@ def main() -> None:
     yaml_path = write_dataset_yaml(
         output_root=output_dataset_dir,
         yaml_name=YOLO_DATASET_YAML_NAME,
-        class_label=YOLO_TARGET_CLASS_LABEL,
+        class_label=YOLO_TARGET_CLASS_NAME,
     )
 
     print("YOLO dataset prepared.")

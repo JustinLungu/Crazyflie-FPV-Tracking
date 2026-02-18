@@ -15,10 +15,10 @@ INFER_MODEL_WEIGHTS = "runs/detect/runs/detect/black_drone_yolo26s/weights/best.
 
 # Inference behavior.
 INFER_IMAGE_SIZE = 960
-INFER_CONF_THRESHOLD = 0.25
-INFER_IOU_THRESHOLD = 0.7
-INFER_MAX_DETECTIONS = 50
-INFER_DEVICE = 0  # Set "cpu" to run on CPU.
+INFER_CONF_THRESHOLD = 0.4
+INFER_IOU_THRESHOLD = 0.9 #lower = suppress overlapping boxes aggressively, higher = multiple overlapping boxes
+INFER_MAX_DETECTIONS = 10
+INFER_DEVICE = 0  # Set "cpu" to run on CPU, 0 = GPU
 INFER_VERBOSE = False
 
 
