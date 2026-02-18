@@ -94,8 +94,10 @@ class ModelsIntegrationTests(unittest.TestCase):
             mod.YOLO_OUTPUT_DATASET_NAME = "black_drone_yolo"
             mod.YOLO_DATASET_YAML_NAME = "dataset.yaml"
             mod.YOLO_TRAIN_MODEL = "fake_model.pt"
-            mod.YOLO_PROJECT_DIR = str(runs_root)
-            mod.YOLO_TRAIN_RUN_NAME = "train_run"
+            mod.YOLO_RUNS_ROOT = str(runs_root)
+            mod.YOLO_MODELS_RUNS_DIR = "models"
+            mod.YOLO_RUN_DATE_FORMAT = "%Y%m%d"
+            mod.YOLO_TRAIN_RUN_LABEL = "train_run"
             mod.YOLO_IMG_SIZE = 640
             mod.YOLO_EPOCHS = 1
             mod.YOLO_BATCH = 2
@@ -109,9 +111,9 @@ class ModelsIntegrationTests(unittest.TestCase):
 
             self.assertTrue(FakeYOLO.train_calls, "Expected train() to be called.")
             _, kwargs = FakeYOLO.train_calls[-1]
-            self.assertEqual(kwargs["project"], str(runs_root))
-            self.assertEqual(kwargs["name"], "train_run")
-            self.assertTrue((runs_root / "train_run" / "weights" / "best.pt").exists())
+            self.assertEqual(kwargs["project"], str(runs_root / "models"))
+            self.assertTrue(kwargs["name"].startswith("train_run_"))
+            self.assertTrue((Path(kwargs["project"]) / kwargs["name"] / "weights" / "best.pt").exists())
 
     def test_test_script_main_with_fake_yolo(self) -> None:
         with tempfile.TemporaryDirectory(prefix="models_test_integration_") as tmp:
@@ -129,8 +131,10 @@ class ModelsIntegrationTests(unittest.TestCase):
             mod.YOLO_TARGET_CLASS_NAME = "black_drone"
             mod.YOLO_OUTPUT_DATASET_NAME = "black_drone_yolo"
             mod.YOLO_DATASET_YAML_NAME = "dataset.yaml"
-            mod.YOLO_PROJECT_DIR = str(runs_root)
-            mod.YOLO_TEST_RUN_NAME = "eval_run"
+            mod.YOLO_RUNS_ROOT = str(runs_root)
+            mod.YOLO_COMPARISON_RUNS_DIR = "comparison"
+            mod.YOLO_RUN_DATE_FORMAT = "%Y%m%d"
+            mod.YOLO_TEST_RUN_LABEL = "eval"
             mod.YOLO_TEST_WEIGHTS = str(weights)
             mod.YOLO_TEST_SPLIT = "test"
             mod.YOLO_IMG_SIZE = 640
@@ -145,8 +149,8 @@ class ModelsIntegrationTests(unittest.TestCase):
 
             self.assertTrue(FakeYOLO.val_calls, "Expected val() to be called.")
             _, kwargs = FakeYOLO.val_calls[-1]
-            self.assertEqual(kwargs["project"], str(runs_root))
-            self.assertEqual(kwargs["name"], "eval_run")
+            self.assertEqual(kwargs["project"], str(runs_root / "comparison"))
+            self.assertTrue(kwargs["name"].startswith("eval_best_test_"))
             self.assertEqual(kwargs["split"], "test")
 
     def test_compare_script_main_with_fake_yolo(self) -> None:
@@ -167,8 +171,10 @@ class ModelsIntegrationTests(unittest.TestCase):
             mod.YOLO_TARGET_CLASS_NAME = "black_drone"
             mod.YOLO_OUTPUT_DATASET_NAME = "black_drone_yolo"
             mod.YOLO_DATASET_YAML_NAME = "dataset.yaml"
-            mod.YOLO_PROJECT_DIR = str(runs_root)
-            mod.YOLO_COMPARE_RUN_PREFIX = "cmp"
+            mod.YOLO_RUNS_ROOT = str(runs_root)
+            mod.YOLO_COMPARISON_RUNS_DIR = "comparison"
+            mod.YOLO_RUN_DATE_FORMAT = "%Y%m%d"
+            mod.YOLO_COMPARE_RUN_LABEL = "cmp"
             mod.YOLO_COMPARE_MODEL_REFS = (str(model_a), str(model_b))
             mod.YOLO_TEST_SPLIT = "test"
             mod.YOLO_IMG_SIZE = 640
@@ -187,6 +193,15 @@ class ModelsIntegrationTests(unittest.TestCase):
             self.assertIn("Comparison results:", output)
             self.assertIn("Best by mAP50-95:", output)
             self.assertGreaterEqual(len(FakeYOLO.val_calls), 2)
+
+            # Compare flow should create one dated session folder + summary csv.
+            comparison_root = runs_root / "comparison"
+            session_dirs = [d for d in comparison_root.iterdir() if d.is_dir()]
+            self.assertEqual(len(session_dirs), 1)
+            self.assertTrue((session_dirs[0] / "comparison_summary.csv").exists())
+
+            _, kwargs = FakeYOLO.val_calls[0]
+            self.assertTrue(str(kwargs["project"]).startswith(str(comparison_root / "cmp_")))
 
 
 if __name__ == "__main__":

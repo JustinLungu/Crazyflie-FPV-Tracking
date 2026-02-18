@@ -12,6 +12,11 @@ def main() -> None:
         dataset_yaml_name=YOLO_DATASET_YAML_NAME,
     )
 
+    project_dir = resolve_repo_path(YOLO_RUNS_ROOT) / YOLO_MODELS_RUNS_DIR
+    project_dir.mkdir(parents=True, exist_ok=True)
+    desired_run_name = build_dated_run_name(YOLO_TRAIN_RUN_LABEL, YOLO_RUN_DATE_FORMAT)
+    run_name = ensure_unique_run_name(project_dir, desired_run_name)
+
     YOLO = load_ultralytics_yolo()
     model = YOLO(YOLO_TRAIN_MODEL)
 
@@ -24,9 +29,9 @@ def main() -> None:
         workers=YOLO_WORKERS,
         patience=YOLO_PATIENCE,
         cache=YOLO_CACHE_IMAGES,
-        project=str(resolve_repo_path(YOLO_PROJECT_DIR)),
-        name=YOLO_TRAIN_RUN_NAME,
-        exist_ok=True,
+        project=str(project_dir),
+        name=run_name,
+        exist_ok=False,
     )
 
     save_dir = Path(results.save_dir)
