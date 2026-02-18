@@ -14,6 +14,7 @@ class ScriptLauncherSystemTests(unittest.TestCase):
     def test_all_launchers_dispatch_via_repo_root(self) -> None:
         script_to_entrypoint = {
             "live_view.sh": "setting_up_camera/get_visual.py",
+            "live_inference.sh": "inference/live_inference.py",
             "capture_images.sh": "data/images_get_data.py",
             "capture_video.sh": "data/videos_get_data.py",
             "label_video.sh": "data/track_label_video.py",

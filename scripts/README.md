@@ -33,6 +33,7 @@ From anywhere:
 - `train_yolo.sh`: train model (`models/train_yolo.py`)
 - `test_yolo.sh`: evaluate selected model (`models/test_yolo.py`)
 - `compare_models.sh`: compare multiple models (`models/compare_models.py`)
+- `live_inference.sh`: run real-time YOLO inference on live feed (`inference/live_inference.py`)
 - `upload_backup.sh`: upload raw/labels backups to Drive (`data/upload_data_drive.py`)
 - `run_tests.sh`: run system/integration test suite (`tests/test_*.py`)
 
@@ -41,4 +42,5 @@ From anywhere:
 - Scripts that require configuration still read their corresponding constants:
   - data pipeline: `data/constants.py`
   - model pipeline: `models/constants.py`
+  - inference pipeline: `inference/constants.py`
 - `create_dataset.sh` forwards optional CLI args to `data/create_dataset.py`.

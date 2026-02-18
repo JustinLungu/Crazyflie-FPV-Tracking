@@ -1,6 +1,6 @@
 import cv2
 
-dev = "/dev/video1"  # change to the working receiver device
+dev = "/dev/video2"  # change to the working receiver device
 cap = cv2.VideoCapture(dev, cv2.CAP_V4L2)
 
 # Optional but often helps with USB receivers
