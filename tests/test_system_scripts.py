@@ -24,6 +24,8 @@ class ScriptLauncherSystemTests(unittest.TestCase):
             "train_yolo.sh": "models/train_yolo.py",
             "test_yolo.sh": "models/test_yolo.py",
             "compare_models.sh": "models/compare_models.py",
+            "depth_image.sh": "depth_estimation/depth_image_inference.py",
+            "depth_video.sh": "depth_estimation/depth_video_inference.py",
             "upload_backup.sh": "data/upload_data_drive.py",
         }
 
