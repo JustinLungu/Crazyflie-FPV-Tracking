@@ -38,7 +38,11 @@ def main() -> None:
     depth_max = float(np.nanmax(depth_map))
 
     np.save(output_npy, depth_map)
-    depth_vis = colorize_depth_map(depth_map, DEPTH_COLORMAP)
+    depth_vis = colorize_depth_map(
+        depth_map,
+        DEPTH_COLORMAP,
+        invert_colormap=DEPTH_INVERT_COLORMAP,
+    )
     cv2.imwrite(str(output_vis), depth_vis)
 
     print("Depth inference complete (single image).")

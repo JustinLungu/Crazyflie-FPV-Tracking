@@ -92,7 +92,11 @@ def main() -> None:
             depth_map = resize_depth_to_frame(depth_map, width, height)
             center_depth = compute_center_depth(depth_map, DEPTH_CENTER_PATCH_SIZE)
 
-            depth_color = colorize_depth_map(depth_map, DEPTH_COLORMAP)
+            depth_color = colorize_depth_map(
+                depth_map,
+                DEPTH_COLORMAP,
+                invert_colormap=DEPTH_INVERT_COLORMAP,
+            )
             composed = np.hstack([frame_bgr, depth_color])
 
             draw_overlay(

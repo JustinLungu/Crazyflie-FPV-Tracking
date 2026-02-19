@@ -51,6 +51,8 @@ DEPTH_PRINT_EVERY_N_FRAMES = 10
 
 # Supported: "turbo", "magma", "inferno", "jet", "viridis".
 DEPTH_COLORMAP = "turbo"
+# If True, near depth is rendered in warm colors (red/yellow) and far depth in cool colors (blue).
+DEPTH_INVERT_COLORMAP = True
 
 # Overlay style for video output.
 DEPTH_TEXT_ORIGIN = (14, 28)

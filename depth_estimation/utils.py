@@ -84,11 +84,17 @@ def _resolve_colormap_code(colormap_name: str) -> int:
     return lookup.get(colormap_name.lower(), cv2.COLORMAP_TURBO)
 
 
-def colorize_depth_map(depth_map: np.ndarray, colormap_name: str) -> np.ndarray:
+def colorize_depth_map(
+    depth_map: np.ndarray,
+    colormap_name: str,
+    invert_colormap: bool = False,
+) -> np.ndarray:
     import cv2
 
     colormap = _resolve_colormap_code(colormap_name)
     depth_u8 = _normalize_depth_to_uint8(depth_map)
+    if invert_colormap:
+        depth_u8 = 255 - depth_u8
     return cv2.applyColorMap(depth_u8, colormap)
 
 
