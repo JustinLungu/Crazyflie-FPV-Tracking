@@ -4,8 +4,8 @@
 # data/labels/<class_name>/<dataset_name>/
 # Keep class/dataset names aligned with data/prepare_yolo_dataset.py output.
 YOLO_LABELS_ROOT = "data/labels"
-YOLO_TARGET_CLASS_NAME = "black_drone"
-YOLO_OUTPUT_DATASET_NAME = "black_drone_yolo"
+YOLO_TARGET_CLASS_NAME = "green_drone"
+YOLO_OUTPUT_DATASET_NAME = YOLO_TARGET_CLASS_NAME + "_yolo"
 YOLO_DATASET_YAML_NAME = "dataset.yaml"
 
 
@@ -17,7 +17,7 @@ YOLO_TRAIN_MODEL = "yolo26s.pt"
 # Hardware/performance settings.
 YOLO_IMG_SIZE = 960
 YOLO_EPOCHS = 150
-YOLO_BATCH = 4
+YOLO_BATCH = 8 # 4 also works pretty fast
 YOLO_DEVICE = 0
 YOLO_WORKERS = 2
 YOLO_PATIENCE = 30
@@ -25,14 +25,16 @@ YOLO_CACHE_IMAGES = False
 
 # Output folder structure under runs/:
 # runs/models/<train_label>_<date>/
+# runs/evaluation/<eval_label>_<date>/
 # runs/comparison/<comparison_label>_<date>/...
 YOLO_RUNS_ROOT = "runs"
 YOLO_MODELS_RUNS_DIR = "models"
+YOLO_EVALUATION_RUNS_DIR = "evaluation"
 YOLO_COMPARISON_RUNS_DIR = "comparison"
 YOLO_RUN_DATE_FORMAT = "%Y%m%d_%H%M%S"
 
 # Base labels used for dated folder names.
-YOLO_TRAIN_RUN_LABEL = "black_drone_yolo26s"
+YOLO_TRAIN_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_yolo26s"
 
 
 ########################################## Test/Eval Constants ############################################
@@ -48,7 +50,7 @@ YOLO_TEST_SPLIT = "test"  # "val" or "test"
 YOLO_TEST_BATCH = 4
 YOLO_TEST_CONF = 0.001
 YOLO_TEST_IOU = 0.7
-YOLO_TEST_RUN_LABEL = "black_drone_eval"
+YOLO_TEST_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_eval"
 
 
 ########################################## Multi-Model Comparison Constants ###############################
@@ -60,4 +62,4 @@ YOLO_COMPARE_MODEL_REFS = (
     "yolo26n.pt",
     "yolo26s.pt",
 )
-YOLO_COMPARE_RUN_LABEL = "black_drone_compare"
+YOLO_COMPARE_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_compare"

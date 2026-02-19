@@ -132,7 +132,7 @@ class ModelsIntegrationTests(unittest.TestCase):
             mod.YOLO_OUTPUT_DATASET_NAME = "black_drone_yolo"
             mod.YOLO_DATASET_YAML_NAME = "dataset.yaml"
             mod.YOLO_RUNS_ROOT = str(runs_root)
-            mod.YOLO_COMPARISON_RUNS_DIR = "comparison"
+            mod.YOLO_EVALUATION_RUNS_DIR = "evaluation"
             mod.YOLO_RUN_DATE_FORMAT = "%Y%m%d"
             mod.YOLO_TEST_RUN_LABEL = "eval"
             mod.YOLO_TEST_WEIGHTS = str(weights)
@@ -149,7 +149,7 @@ class ModelsIntegrationTests(unittest.TestCase):
 
             self.assertTrue(FakeYOLO.val_calls, "Expected val() to be called.")
             _, kwargs = FakeYOLO.val_calls[-1]
-            self.assertEqual(kwargs["project"], str(runs_root / "comparison"))
+            self.assertEqual(kwargs["project"], str(runs_root / "evaluation"))
             self.assertTrue(kwargs["name"].startswith("eval_best_test_"))
             self.assertEqual(kwargs["split"], "test")
 

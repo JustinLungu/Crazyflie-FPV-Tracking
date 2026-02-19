@@ -16,7 +16,7 @@ def main() -> None:
         models_runs_dir=YOLO_MODELS_RUNS_DIR,
     )
     model_token = sanitize_token(Path(model_ref).stem)
-    project_dir = resolve_repo_path(YOLO_RUNS_ROOT) / YOLO_COMPARISON_RUNS_DIR
+    project_dir = resolve_repo_path(YOLO_RUNS_ROOT) / YOLO_EVALUATION_RUNS_DIR
     project_dir.mkdir(parents=True, exist_ok=True)
     desired_run_name = build_dated_run_name(
         f"{YOLO_TEST_RUN_LABEL}_{model_token}_{YOLO_TEST_SPLIT}",
