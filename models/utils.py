@@ -69,6 +69,11 @@ def resolve_model_reference(
         )
 
     ref_path = resolve_repo_path(model_ref)
+    if ("/" in model_ref or "\\" in model_ref or model_ref.startswith(".")) and not ref_path.exists():
+        raise RuntimeError(
+            f"Model path not found: {ref_path}\n"
+            "Set YOLO_TEST_WEIGHTS to an existing .pt file path or use latest_best/latest_last."
+        )
     if ref_path.exists():
         return str(ref_path)
     return model_ref

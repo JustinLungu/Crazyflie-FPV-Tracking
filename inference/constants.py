@@ -11,7 +11,7 @@ CAMERA_BUFFER_SIZE = 1
 ########################################## YOLO Inference Constants #######################################
 
 # Trained model weights to run on live feed.
-INFER_MODEL_WEIGHTS = "runs/models/black_drone_yolo26s_20260215_170000/weights/best.pt"
+INFER_MODEL_WEIGHTS = "runs/models/green_drone_yolo26s_20260218_143609/weights/best.pt"
 
 # Inference behavior.
 INFER_IMAGE_SIZE = 960

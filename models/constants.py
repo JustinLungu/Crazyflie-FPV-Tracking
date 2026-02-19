@@ -43,9 +43,9 @@ YOLO_TRAIN_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_yolo26s"
 # Accepted values:
 # - "latest_best": latest run in runs/models/*, best.pt
 # - "latest_last": latest run in runs/models/*, last.pt
-# - explicit local path to .pt
+# - explicit local path to .pt (ex: runs/models/green_drone_yolo26s_20260215_170000/weights/best.pt)
 # - Ultralytics model alias (e.g. yolo26s.pt)
-YOLO_TEST_WEIGHTS = "latest_best"
+YOLO_TEST_WEIGHTS = "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260218_143609/weights/best.pt"
 YOLO_TEST_SPLIT = "test"  # "val" or "test"
 YOLO_TEST_BATCH = 4
 YOLO_TEST_CONF = 0.001
@@ -58,8 +58,6 @@ YOLO_TEST_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_eval"
 # Evaluate all listed models on the same dataset split and print one summary table.
 YOLO_COMPARE_MODEL_REFS = (
     YOLO_TEST_WEIGHTS,
-    "latest_last",
-    "yolo26n.pt",
-    "yolo26s.pt",
+    "latest_last"
 )
 YOLO_COMPARE_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_compare"
