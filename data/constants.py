@@ -1,5 +1,6 @@
 ################################# Video & Image Capture Constants #################################
-DEVICE = "/dev/video1"
+DEVICE = "/dev/video2"
+DRONE_TYPE = "black_video"
 TARGET_FPS = 10  # set 5 or 10 for labeling
 WIDTH, HEIGHT = 640, 480
 FPS_HINT = 30

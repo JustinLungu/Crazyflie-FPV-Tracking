@@ -6,7 +6,7 @@ import cv2
 
 
 def main():
-    session_dir = make_session_dir(Path(RAW_DATA_ROOT), "video")
+    session_dir = make_session_dir(Path(RAW_DATA_ROOT), DRONE_TYPE)
     video_path = session_dir / VIDEO_FLIE_NAME
 
     cap = open_camera()
