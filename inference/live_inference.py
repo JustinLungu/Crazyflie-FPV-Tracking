@@ -3,7 +3,7 @@ import time
 import cv2
 
 from constants import *
-from utils import load_yolo_model, open_camera
+from utils import *
 
 
 def draw_overlay(frame, detection_count: int, infer_ms: float, display_fps: float) -> None:

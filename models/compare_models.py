@@ -3,18 +3,7 @@ from pathlib import Path
 from time import perf_counter
 
 from constants import *
-from utils import (
-    build_comparison_session_name,
-    ensure_unique_run_name,
-    format_metric,
-    format_time_ms,
-    load_ultralytics_yolo,
-    print_comparison_table,
-    require_dataset_yaml,
-    resolve_model_reference,
-    resolve_repo_path,
-    sanitize_token,
-)
+from utils import *
 
 
 def main() -> None:
