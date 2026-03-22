@@ -4,7 +4,7 @@
 # data/labels/<class_name>/<dataset_name>/
 # Keep class/dataset names aligned with data/prepare_yolo_dataset.py output.
 YOLO_LABELS_ROOT = "data/labels"
-YOLO_TARGET_CLASS_NAME = "green_drone"
+YOLO_TARGET_CLASS_NAME = "brushless_drone"
 YOLO_OUTPUT_DATASET_NAME = YOLO_TARGET_CLASS_NAME + "_yolo"
 YOLO_DATASET_YAML_NAME = "dataset.yaml"
 
@@ -15,12 +15,19 @@ YOLO_DATASET_YAML_NAME = "dataset.yaml"
 YOLO_TRAIN_MODEL = "yolo26s.pt"
 
 # Hardware/performance settings.
+# lower = faster, less VRAM, less detail; higher = better small-object detail, slower, more VRAM.
 YOLO_IMG_SIZE = 960
 YOLO_EPOCHS = 150
-YOLO_BATCH = 8 # 4 also works pretty fast
+# lower = safer for VRAM, noisier gradients; higher = faster/steadier training, may OOM.
+YOLO_BATCH = 16 
+# compute target. 0 = first GPU; cpu = much slower; wrong GPU index fails.
 YOLO_DEVICE = 0
+# dataloader worker processes. Lower = less CPU/RAM load but possible data bottleneck; 
+# higher = faster loading until CPU/IO saturates (too high can hurt stability).
 YOLO_WORKERS = 2
+# early-stop patience. Lower = stops sooner; higher = waits longer for improvements.
 YOLO_PATIENCE = 30
+# True can speed epochs after warmup, but uses much more RAM/disk cache.
 YOLO_CACHE_IMAGES = False
 
 # Output folder structure under runs/:
