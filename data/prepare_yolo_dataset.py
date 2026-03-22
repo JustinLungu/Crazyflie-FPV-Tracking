@@ -182,6 +182,37 @@ def split_by_session(
     return result
 
 
+def split_by_frame_within_each_session(
+    samples: list[Sample],
+    train_ratio: float,
+    val_ratio: float,
+    test_ratio: float,
+    seed: int,
+) -> dict[str, list[Sample]]:
+    grouped: dict[str, list[Sample]] = defaultdict(list)
+    for sample in samples:
+        grouped[sample.source_session].append(sample)
+
+    rng = random.Random(seed)
+    result = {"train": [], "val": [], "test": []}
+
+    for session_name in sorted(grouped.keys()):
+        session_samples = list(grouped[session_name])
+        rng.shuffle(session_samples)
+
+        n_train, n_val, _ = split_counts(
+            len(session_samples),
+            train_ratio,
+            val_ratio,
+            test_ratio,
+        )
+        result["train"].extend(session_samples[:n_train])
+        result["val"].extend(session_samples[n_train : n_train + n_val])
+        result["test"].extend(session_samples[n_train + n_val :])
+
+    return result
+
+
 def write_yolo_label(src_label: Path, dst_label: Path, single_class_mode: bool, target_class_id: int) -> None:
     if not src_label.exists():
         dst_label.write_text("")
@@ -317,16 +348,39 @@ def main() -> None:
         raise RuntimeError("No samples found after filtering. Check YOLO_INCLUDED_SESSIONS.")
 
     session_count = len({s.source_session for s in samples})
-    if session_count >= YOLO_MIN_SESSIONS_FOR_GROUP_SPLIT:
+    split_mode = YOLO_SPLIT_MODE.strip().lower()
+
+    if split_mode == "auto":
+        if session_count >= YOLO_MIN_SESSIONS_FOR_GROUP_SPLIT:
+            split_samples = split_by_session(samples, train_ratio, val_ratio, test_ratio, YOLO_SPLIT_SEED)
+            split_strategy = "session"
+        elif YOLO_FALLBACK_TO_FRAME_SPLIT_IF_FEW_SESSIONS:
+            split_samples = split_by_frame(samples, train_ratio, val_ratio, test_ratio, YOLO_SPLIT_SEED)
+            split_strategy = "frame_fallback"
+        else:
+            raise RuntimeError(
+                f"Only {session_count} sessions found, but group split requires "
+                f"{YOLO_MIN_SESSIONS_FOR_GROUP_SPLIT}."
+            )
+    elif split_mode == "session":
         split_samples = split_by_session(samples, train_ratio, val_ratio, test_ratio, YOLO_SPLIT_SEED)
-        split_strategy = "session"
-    elif YOLO_FALLBACK_TO_FRAME_SPLIT_IF_FEW_SESSIONS:
+        split_strategy = "session_forced"
+    elif split_mode == "frame":
         split_samples = split_by_frame(samples, train_ratio, val_ratio, test_ratio, YOLO_SPLIT_SEED)
-        split_strategy = "frame_fallback"
+        split_strategy = "frame_forced"
+    elif split_mode in {"per_session_frame", "per-session-frame", "session_frame"}:
+        split_samples = split_by_frame_within_each_session(
+            samples,
+            train_ratio,
+            val_ratio,
+            test_ratio,
+            YOLO_SPLIT_SEED,
+        )
+        split_strategy = "per_session_frame"
     else:
         raise RuntimeError(
-            f"Only {session_count} sessions found, but group split requires "
-            f"{YOLO_MIN_SESSIONS_FOR_GROUP_SPLIT}."
+            "Invalid YOLO_SPLIT_MODE. Use one of: "
+            "auto, session, frame, per_session_frame."
         )
 
     prepare_output_dirs(output_dataset_dir, YOLO_OVERWRITE_OUTPUT)

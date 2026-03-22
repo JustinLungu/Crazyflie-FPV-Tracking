@@ -1,6 +1,6 @@
 ################################# Video & Image Capture Constants #################################
-DEVICE = "/dev/video2"
-DRONE_TYPE = "depth_black_video"
+DEVICE = "/dev/video0"
+DRONE_TYPE = "brushless"
 TARGET_FPS = 10  # set 5 or 10 for labeling
 WIDTH, HEIGHT = 640, 480
 FPS_HINT = 30
@@ -14,13 +14,14 @@ VIDEO_FLIE_NAME = "video.avi"
 
 # Constants for tracker labeling
 # Input video to label and output folder for image/label pairs.
-VIDEO_PATH = "data/raw_data/black_video_session_20260211_183212/video.avi"
+SESSION_NAME = "brushless_session_20260313_144348"
+VIDEO_PATH = "data/raw_data/" + SESSION_NAME + "/video.avi"
 # Root directory where all labeled outputs are stored.
 OUT_DIR = "data/labels"
 
 # Folder name for the object class currently being labeled.
-# Example: "black_drone", "green_drone"
-LABEL_CLASS_NAME = "black_drone"
+# Example: "black_drone", "green_drone", "brushless_drone"
+LABEL_CLASS_NAME = "brushless_drone"
 CLASS_ID = 1
 
 # Each class stores labeled sessions under labels/<class_name>/all_data/.
@@ -86,7 +87,7 @@ BACKUP_TEMP_DIR_PREFIX = "dataset_backup_"
 ########################################## YOLO Dataset Prep Constants ####################################
 
 # Class folder and dataset names under data/labels/.
-YOLO_TARGET_CLASS_NAME = "green_drone"
+YOLO_TARGET_CLASS_NAME = "brushless_drone"
 YOLO_SOURCE_DATASET_NAME = YOLO_TARGET_CLASS_NAME + "_dataset"
 YOLO_OUTPUT_DATASET_NAME = YOLO_TARGET_CLASS_NAME + "_yolo"
 YOLO_DATASET_YAML_NAME = "dataset.yaml"
@@ -100,6 +101,13 @@ YOLO_SPLIT_SEED = 42
 YOLO_TRAIN_RATIO = 0.70
 YOLO_VAL_RATIO = 0.20
 YOLO_TEST_RATIO = 0.10
+
+# Split mode:
+# - "auto": session split when enough sessions, otherwise frame fallback
+# - "session": assign full sessions to train/val/test
+# - "frame": random frame-level split over all samples
+# - "per_session_frame": random frame-level split inside each session, then merged
+YOLO_SPLIT_MODE = "per_session_frame"
 
 # Prefer session-level split to avoid leakage between temporally-adjacent frames.
 YOLO_MIN_SESSIONS_FOR_GROUP_SPLIT = 3
