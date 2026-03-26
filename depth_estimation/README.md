@@ -15,7 +15,7 @@ Use this README as a quick overview. Detailed setup, constants, and usage live i
   - Fast and lightweight, mainly for rough range estimates.
 
 - `unidepth/`
-  - TODO
+  - Monocular depth with UniDepth v2 for image and video input.
 
 - `midas/`
-  - TODO
+  - Monocular depth with MiDaS for image and video input.
