@@ -6,7 +6,6 @@ from unidepth_v2 import UniDepthV2
 from utils import (
     colorize_depth_map,
     compute_center_depth,
-    ensure_parent_dir,
     resolve_existing_image_path,
     resolve_repo_path,
 )
@@ -18,10 +17,12 @@ def main() -> None:
         DEPTH_IMAGE_FALLBACK_EXTENSIONS,
     )
 
-    output_npy = resolve_repo_path(DEPTH_IMAGE_OUTPUT_NPY_PATH)
-    output_vis = resolve_repo_path(DEPTH_IMAGE_OUTPUT_VIS_PATH)
-    ensure_parent_dir(output_npy)
-    ensure_parent_dir(output_vis)
+    output_dir = resolve_repo_path(DEPTH_IMAGE_OUTPUT_DIR)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    image_stem = image_path.stem
+    output_npy = output_dir / f"{image_stem}{DEPTH_IMAGE_OUTPUT_NPY_SUFFIX}"
+    output_vis = output_dir / f"{image_stem}{DEPTH_IMAGE_OUTPUT_VIS_SUFFIX}"
 
     frame_bgr = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
     if frame_bgr is None:

@@ -9,15 +9,17 @@ DEPTH_RESOLUTION_LEVEL = None
 ########################################## Single Image Constants ########################################
 
 # Input image to estimate depth from.
+DRONE_NAME = "green_drone"
 CUSTOM_PATH_IMG = "images_session_20260211_175008/images/frame_000001"
 DEPTH_IMAGE_INPUT_PATH = "data/raw_data/" + CUSTOM_PATH_IMG + ".png"
 # If DEPTH_IMAGE_INPUT_PATH does not exist, try these extensions on the same stem.
 DEPTH_IMAGE_FALLBACK_EXTENSIONS = ("png", "jpg", "jpeg")
 
-# Outputs for image-depth inference (non-live -> output/).
-DEPTH_OUTPUT_ROOT = "output/unidepth"
-DEPTH_IMAGE_OUTPUT_NPY_PATH = DEPTH_OUTPUT_ROOT + "/" + CUSTOM_PATH_IMG + "/image_depth.npy"
-DEPTH_IMAGE_OUTPUT_VIS_PATH = DEPTH_OUTPUT_ROOT + "/" + CUSTOM_PATH_IMG + "/image_depth_vis.png"
+# Outputs for image-depth inference (flat, non-live -> output folder).
+DEPTH_OUTPUT_ROOT = "depth_estimation/output/unidepth/" + DRONE_NAME
+DEPTH_IMAGE_OUTPUT_DIR = DEPTH_OUTPUT_ROOT
+DEPTH_IMAGE_OUTPUT_NPY_SUFFIX = "_depth.npy"
+DEPTH_IMAGE_OUTPUT_VIS_SUFFIX = "_depth_vis.png"
 
 
 ########################################## Video Constants ###############################################
