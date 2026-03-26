@@ -14,3 +14,6 @@ data/gdrive_token.json
 # YOLO
 *.pt
 runs/
+
+# calibration images
+/depth_estimation/camera_calibration/calibration_images
