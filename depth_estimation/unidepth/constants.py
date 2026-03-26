@@ -25,7 +25,7 @@ DEPTH_IMAGE_OUTPUT_VIS_SUFFIX = "_depth_vis.png"
 ########################################## Video Constants ###############################################
 
 # Input .avi file to estimate depth frame-by-frame.
-CUSTOM_PATH_VIDEO = "depth_black_video_session_20260219_145858"
+CUSTOM_PATH_VIDEO = "brushless_session_20260312_171741"
 DEPTH_VIDEO_INPUT_PATH = "data/raw_data/" + CUSTOM_PATH_VIDEO + "/video.avi"
 
 # If True, writes a side-by-side video (RGB frame + depth colormap).
