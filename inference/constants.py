@@ -11,10 +11,11 @@ CAMERA_BUFFER_SIZE = 1
 ########################################## YOLO Inference Constants #######################################
 
 # Trained model weights to run on live feed.
-INFER_MODEL_WEIGHTS = "runs/models/green_drone_yolo26s_20260218_143609/weights/best.pt"
+CLASS_NAME = "brushless_drone_yolo26s_20260322_221846"
+INFER_MODEL_WEIGHTS = "runs/models/" + CLASS_NAME + "/weights/best.pt"
 
 # Inference behavior.
-INFER_IMAGE_SIZE = 960
+INFER_IMAGE_SIZE = 1024
 INFER_CONF_THRESHOLD = 0.4
 INFER_IOU_THRESHOLD = 0.9 #lower = suppress overlapping boxes aggressively, higher = multiple overlapping boxes
 INFER_MAX_DETECTIONS = 10

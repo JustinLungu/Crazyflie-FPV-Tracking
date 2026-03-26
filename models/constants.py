@@ -16,17 +16,17 @@ YOLO_TRAIN_MODEL = "yolo26s.pt"
 
 # Hardware/performance settings.
 # lower = faster, less VRAM, less detail; higher = better small-object detail, slower, more VRAM.
-YOLO_IMG_SIZE = 960
+YOLO_IMG_SIZE = 1024 #960
 YOLO_EPOCHS = 150
 # lower = safer for VRAM, noisier gradients; higher = faster/steadier training, may OOM.
-YOLO_BATCH = 16 
+YOLO_BATCH = 8 
 # compute target. 0 = first GPU; cpu = much slower; wrong GPU index fails.
 YOLO_DEVICE = 0
 # dataloader worker processes. Lower = less CPU/RAM load but possible data bottleneck; 
 # higher = faster loading until CPU/IO saturates (too high can hurt stability).
 YOLO_WORKERS = 2
 # early-stop patience. Lower = stops sooner; higher = waits longer for improvements.
-YOLO_PATIENCE = 30
+YOLO_PATIENCE = 10
 # True can speed epochs after warmup, but uses much more RAM/disk cache.
 YOLO_CACHE_IMAGES = False
 
@@ -52,7 +52,7 @@ YOLO_TRAIN_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_yolo26s"
 # - "latest_last": latest run in runs/models/*, last.pt
 # - explicit local path to .pt (ex: runs/models/green_drone_yolo26s_20260215_170000/weights/best.pt)
 # - Ultralytics model alias (e.g. yolo26s.pt)
-YOLO_TEST_WEIGHTS = "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260218_143609/weights/best.pt"
+YOLO_TEST_WEIGHTS = "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260322_221846/weights/best.pt"
 YOLO_TEST_SPLIT = "test"  # "val" or "test"
 YOLO_TEST_BATCH = 4
 YOLO_TEST_CONF = 0.001
