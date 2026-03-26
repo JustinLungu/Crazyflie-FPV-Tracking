@@ -2,7 +2,8 @@ from pathlib import Path
 
 import numpy as np
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 def resolve_repo_path(path_like: str) -> Path:
     path = Path(path_like)
@@ -30,7 +31,7 @@ def resolve_existing_image_path(
     tried = ", ".join(str(p) for p in [requested, *candidates])
     raise RuntimeError(
         f"Image not found. Tried: {tried}\n"
-        "Set DEPTH_IMAGE_INPUT_PATH in depth_estimation/constants.py."
+        "Set DEPTH_IMAGE_INPUT_PATH in depth_estimation/unidepth/constants.py."
     )
 
 

@@ -34,6 +34,7 @@ From anywhere:
 - `test_yolo.sh`: evaluate selected model (`models/test_yolo.py`)
 - `compare_models.sh`: compare multiple models (`models/compare_models.py`)
 - `camera_calibration.sh`: run camera calibration (`depth_estimation/camera_calibration/calibration.py`)
+- `naive_bbox_depth.sh`: run naive bbox depth (`depth_estimation/naive_bbox_depth/bbox_dist_estimator.py`)
 - `depth_image.sh`: run UniDepth on one image (`depth_estimation/unidepth/depth_image_inference.py`)
 - `depth_video.sh`: run UniDepth on a .avi video (`depth_estimation/unidepth/depth_video_inference.py`)
 - `live_inference.sh`: run real-time YOLO inference on live feed (`inference/live_inference.py`)
@@ -46,5 +47,7 @@ From anywhere:
   - data pipeline: `data/constants.py`
   - model pipeline: `models/constants.py`
   - depth pipeline: `depth_estimation/unidepth/constants.py`
+  - naive bbox depth pipeline: `depth_estimation/naive_bbox_depth/constants.py`
+  - camera calibration pipeline: `depth_estimation/camera_calibration/constants.py`
   - inference pipeline: `inference/constants.py`
 - `create_dataset.sh` forwards optional CLI args to `data/create_dataset.py`.

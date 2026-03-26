@@ -1,15 +1,22 @@
-import os
-import cv2
-import os
-import numpy as np
 from pathlib import Path
+
+import cv2
 from ultralytics import YOLO
+
 from constants import *
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def ensure_output_dir(path: str) -> None:
-    os.makedirs(path, exist_ok=True)
+def resolve_repo_path(path_like: str) -> Path:
+    path = Path(path_like)
+    return path if path.is_absolute() else (REPO_ROOT / path)
+
+
+def ensure_output_dir(path: str | Path) -> Path:
+    output_dir = resolve_repo_path(str(path))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir
 
 
 def estimate_distance_from_bbox(
@@ -20,7 +27,6 @@ def estimate_distance_from_bbox(
     x1, y1, x2, y2 = bbox_xyxy
 
     bbox_width_px = max(x2 - x1, 1.0)
-
     z_est = (fx * real_width_m) / bbox_width_px
 
     cx = (x1 + x2) / 2.0
@@ -33,17 +39,25 @@ def estimate_distance_from_bbox(
     }
 
 
-def yolo_inference(image_path, model_path, conf_threshold):
-    model = YOLO(model_path)
-    results = model.predict(image_path, conf=conf_threshold)
-    return results
+def yolo_inference(image_path: str, model_path: str, conf_threshold: float):
+    image_abs = resolve_repo_path(image_path)
+    if not image_abs.exists():
+        raise FileNotFoundError(f"Could not read image: {image_abs}")
+
+    model_abs = resolve_repo_path(model_path)
+    if not model_abs.exists():
+        raise FileNotFoundError(f"Could not read model weights: {model_abs}")
+
+    model = YOLO(str(model_abs))
+    results = model.predict(str(image_abs), conf=conf_threshold)
+    return results, image_abs
 
 
-
-def process_best_detection(results, image_path):
-    image = cv2.imread(image_path)
+def process_best_detection(results, image_path: str, output_dir: str):
+    image_abs = resolve_repo_path(image_path)
+    image = cv2.imread(str(image_abs))
     if image is None:
-        raise FileNotFoundError(f"Could not read image: {image_path}")
+        raise FileNotFoundError(f"Could not read image: {image_abs}")
 
     best_detection = None
     best_conf = -1.0
@@ -94,14 +108,14 @@ def process_best_detection(results, image_path):
     print(f"  bbox width px    = {estimate['bbox_width_px']:.2f}")
     print(f"  distance (width) = {estimate['z_est_m']:.3f} m")
 
-    ensure_output_dir(OUTPUT_DIR)
-    output_path = os.path.join(OUTPUT_DIR, "distance_estimate.jpg")
-    cv2.imwrite(output_path, image)
+    output_dir_abs = ensure_output_dir(output_dir)
+    image_stem = image_abs.stem
+    output_path = output_dir_abs / f"{image_stem}_distance_estimate.jpg"
+    cv2.imwrite(str(output_path), image)
     print(f"Saved annotated image to: {output_path}")
 
 
 def open_camera() -> cv2.VideoCapture:
-    """Open camera with V4L2 backend for Linux."""
     cap = cv2.VideoCapture(DEVICE, cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*FOURCC))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
@@ -115,9 +129,12 @@ def open_camera() -> cv2.VideoCapture:
     return cap
 
 
-def live_distance_inference(model_path, conf_threshold):
-    """Live feed distance estimation using YOLO detection on bbox width."""
-    yolo_model = YOLO(model_path)
+def live_distance_inference(model_path: str, conf_threshold: float):
+    model_abs = resolve_repo_path(model_path)
+    if not model_abs.exists():
+        raise FileNotFoundError(f"Could not read model weights: {model_abs}")
+
+    yolo_model = YOLO(str(model_abs))
     cap = open_camera()
 
     print("Live distance inference started. Press ESC to exit.")
@@ -135,13 +152,11 @@ def live_distance_inference(model_path, conf_threshold):
             frame_count += 1
             display_frame = frame_bgr.copy()
 
-            # Run YOLO inference
             yolo_results = yolo_model.predict(frame_bgr, conf=conf_threshold, verbose=False)
 
             best_detection = None
             best_conf = -1.0
 
-            # Find best detection
             for result in yolo_results:
                 if result.boxes is None:
                     continue
@@ -154,7 +169,6 @@ def live_distance_inference(model_path, conf_threshold):
                         best_conf = conf
                         best_detection = (xyxy, conf)
 
-            # If we have a detection, estimate distance
             if best_detection is not None:
                 xyxy, conf = best_detection
                 estimate = estimate_distance_from_bbox(
@@ -192,7 +206,6 @@ def live_distance_inference(model_path, conf_threshold):
                     2,
                 )
 
-            # Add frame counter
             cv2.putText(
                 display_frame,
                 f"Frame: {frame_count}",
@@ -203,12 +216,10 @@ def live_distance_inference(model_path, conf_threshold):
                 2,
             )
 
-            cv2.imshow("Live Distance Estimation (Brutal Method)", display_frame)
+            cv2.imshow("Live Distance Estimation (Naive BBox)", display_frame)
 
-            # Wait for key press
             key = cv2.waitKey(1) & 0xFF
-
-            if key == 27:  # ESC to exit
+            if key == 27:
                 print("Exiting...")
                 break
 

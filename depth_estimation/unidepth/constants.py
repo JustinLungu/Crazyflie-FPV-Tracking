@@ -14,9 +14,10 @@ DEPTH_IMAGE_INPUT_PATH = "data/raw_data/" + CUSTOM_PATH_IMG + ".png"
 # If DEPTH_IMAGE_INPUT_PATH does not exist, try these extensions on the same stem.
 DEPTH_IMAGE_FALLBACK_EXTENSIONS = ("png", "jpg", "jpeg")
 
-# Outputs for image-depth inference.
-DEPTH_IMAGE_OUTPUT_NPY_PATH = "data/depth/" + CUSTOM_PATH_IMG + "/image_depth.npy"
-DEPTH_IMAGE_OUTPUT_VIS_PATH = "data/depth/" + CUSTOM_PATH_IMG + "/image_depth_vis.png"
+# Outputs for image-depth inference (non-live -> output/).
+DEPTH_OUTPUT_ROOT = "output/unidepth"
+DEPTH_IMAGE_OUTPUT_NPY_PATH = DEPTH_OUTPUT_ROOT + "/" + CUSTOM_PATH_IMG + "/image_depth.npy"
+DEPTH_IMAGE_OUTPUT_VIS_PATH = DEPTH_OUTPUT_ROOT + "/" + CUSTOM_PATH_IMG + "/image_depth_vis.png"
 
 
 ########################################## Video Constants ###############################################
@@ -27,7 +28,7 @@ DEPTH_VIDEO_INPUT_PATH = "data/raw_data/" + CUSTOM_PATH_VIDEO + "/video.avi"
 
 # If True, writes a side-by-side video (RGB frame + depth colormap).
 DEPTH_VIDEO_WRITE_OUTPUT = True
-DEPTH_VIDEO_OUTPUT_PATH = "data/depth/" + CUSTOM_PATH_VIDEO + "/video_depth_overlay.avi"
+DEPTH_VIDEO_OUTPUT_PATH = DEPTH_OUTPUT_ROOT + "/" + CUSTOM_PATH_VIDEO + "/video_depth_overlay.avi"
 
 # If True, show a live preview window during processing.
 DEPTH_VIDEO_SHOW_PREVIEW = True
