@@ -4,28 +4,7 @@ import os
 import cv2
 import numpy as np
 
-# IMPORTANT:
-# This must match your printed checkerboard INTERNAL corners
-CHECKERBOARD = (10, 7)
-
-# Real square size in meters
-SQUARE_SIZE = 0.025  # 25 mm
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Folder structure for calibration inputs/outputs
-CALIBRATION_DIR = os.path.join(SCRIPT_DIR, "calibration_images")
-IMAGE_DIR = os.path.join(CALIBRATION_DIR, "input_images")
-IMAGE_GLOB = os.path.join(IMAGE_DIR, "**", "*.jpg")
-OUTPUT_DIR = CALIBRATION_DIR
-CORNER_OUTPUT_DIR = os.path.join(OUTPUT_DIR, "corner_detections")
-
-# Corner refinement criteria
-CRITERIA = (
-    cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
-    30,
-    0.001,
-)
+from constants import *
 
 
 def compute_reprojection_error(objpoints, imgpoints, rvecs, tvecs, K, dist):

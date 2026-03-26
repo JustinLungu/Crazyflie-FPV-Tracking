@@ -2,15 +2,9 @@ import os
 import sys
 
 import cv2
+from constants import CHECKERBOARD, DEFAULT_IMAGE_PATH
 
-CHECKERBOARD = (10, 7)
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_IMAGE_PATH = os.path.join(
-    SCRIPT_DIR,
-    "calibration_images",
-    "input_images",
-    "frame_1.jpg",
-)
+
 
 
 def main():
