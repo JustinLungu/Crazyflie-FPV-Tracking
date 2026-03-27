@@ -1,27 +1,17 @@
-import os
+from pathlib import Path
 import sys
 
-import cv2
-from constants import CHECKERBOARD, DEFAULT_IMAGE_PATH
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from depth_estimation.camera_calibration.pipeline import CameraCalibrationPipeline
 
 
-
-
-def main():
-    image_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_IMAGE_PATH
-
-    img = cv2.imread(image_path)
-    if img is None:
-        raise FileNotFoundError(f"Could not read image: {image_path}")
-
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, None)
-
-    print(f"Detected: {ret}")
-
-    cv2.drawChessboardCorners(img, CHECKERBOARD, corners, ret)
-    cv2.imshow("corners", img)
-    cv2.waitKey(0)
+def main() -> None:
+    image_path = sys.argv[1] if len(sys.argv) > 1 else None
+    pipeline = CameraCalibrationPipeline()
+    pipeline.run_checkerboard_detection(image_path=image_path)
 
 
 if __name__ == "__main__":
