@@ -31,7 +31,7 @@ def resolve_existing_image_path(
     tried = ", ".join(str(p) for p in [requested, *candidates])
     raise RuntimeError(
         f"Image not found. Tried: {tried}\n"
-        "Set DEPTH_IMAGE_INPUT_PATH in depth_estimation/unidepth/constants.py."
+        "Set MIDAS_IMAGE_INPUT_PATH in depth_estimation/midas/constants.py."
     )
 
 

@@ -34,8 +34,12 @@ From anywhere:
 - `test_yolo.sh`: evaluate selected model (`models/test_yolo.py`)
 - `compare_models.sh`: compare multiple models (`models/compare_models.py`)
 - `camera_calibration.sh`: run camera calibration (`depth_estimation/camera_calibration/calibration.py`)
-- `depth_image.sh`: run UniDepth on one image (`depth_estimation/unidepth/depth_image_inference.py`)
-- `depth_video.sh`: run UniDepth on a .avi video (`depth_estimation/unidepth/depth_video_inference.py`)
+- `naive_bbox_depth.sh`: run naive bbox depth (`depth_estimation/naive_bbox_depth/bbox_dist_estimator.py`)
+- `unidepth_image.sh`: run UniDepth on one image (`depth_estimation/unidepth/depth_image_inference.py`)
+- `unidepth_video.sh`: run UniDepth on a .avi video (`depth_estimation/unidepth/depth_video_inference.py`)
+- `midas_image.sh`: run MiDaS on one image (`depth_estimation/midas/depth_image_inference.py`)
+- `midas_video.sh`: run MiDaS on a .avi video (`depth_estimation/midas/depth_video_inference.py`)
+- `live_depth.sh`: run live depth with selectable method(s) (`depth_estimation/live_depth_estimation.py`)
 - `live_inference.sh`: run real-time YOLO inference on live feed (`inference/live_inference.py`)
 - `upload_backup.sh`: upload raw/labels backups to Drive (`data/upload_data_drive.py`)
 - `run_tests.sh`: run system/integration test suite (`tests/test_*.py`)
@@ -45,6 +49,9 @@ From anywhere:
 - Scripts that require configuration still read their corresponding constants:
   - data pipeline: `data/constants.py`
   - model pipeline: `models/constants.py`
-  - depth pipeline: `depth_estimation/unidepth/constants.py`
+  - unidepth pipeline: `depth_estimation/unidepth/constants.py`
+  - midas pipeline: `depth_estimation/midas/constants.py`
+  - naive bbox depth pipeline: `depth_estimation/naive_bbox_depth/constants.py`
+  - camera calibration pipeline: `depth_estimation/camera_calibration/constants.py`
   - inference pipeline: `inference/constants.py`
 - `create_dataset.sh` forwards optional CLI args to `data/create_dataset.py`.

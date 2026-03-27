@@ -17,3 +17,4 @@ runs/
 
 # calibration images
 /depth_estimation/camera_calibration/calibration_images
+/depth_estimation/output/

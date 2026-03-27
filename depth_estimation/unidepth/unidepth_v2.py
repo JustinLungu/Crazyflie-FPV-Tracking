@@ -2,13 +2,20 @@ import torch
 from PIL import Image
 import numpy as np
 import math
+from pathlib import Path
+import sys
+from contextlib import contextmanager
+import importlib
 
 class UniDepthV2(torch.nn.Module):
     def __init__(self, resolution_level=None):
         super(UniDepthV2, self).__init__()
-        self.model = torch.hub.load("lpiccinelli-eth/UniDepth", "UniDepth", version="v2", backbone="vitb14", pretrained=True, trust_repo=True, force_reload=False)
+        self.model = self._load_unidepth_model()
         self.model = self.model.eval()
-        self.model = self.model.to("cuda")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        if self.device != "cuda":
+            print("CUDA not available for UniDepth. Falling back to CPU.")
+        self.model = self.model.to(self.device)
 
         # Set resolution_level if provided (range: [0, 10))
         if resolution_level is not None:
@@ -21,6 +28,104 @@ class UniDepthV2(torch.nn.Module):
         # Apply padding bug fix (GitHub issue #139)
         self._patch_padding_function()
 
+    def _find_cached_unidepth_repo(self) -> Path | None:
+        hub_dir = Path(torch.hub.get_dir())
+        if not hub_dir.exists():
+            return None
+
+        candidates = sorted(
+            hub_dir.glob("lpiccinelli-eth_UniDepth_*"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        for repo_dir in candidates:
+            if (repo_dir / "hubconf.py").exists() and (repo_dir / "unidepth").is_dir():
+                return repo_dir
+        return None
+
+    def _add_unidepth_repo_to_syspath(self) -> Path | None:
+        repo_dir = self._find_cached_unidepth_repo()
+        if repo_dir is None:
+            return None
+
+        repo_str = str(repo_dir)
+        if repo_str not in sys.path:
+            sys.path.insert(0, repo_str)
+        return repo_dir
+
+    @contextmanager
+    def _without_local_unidepth_shadow(self):
+        # Running `python depth_estimation/live_depth_estimation.py` places
+        # `<repo>/depth_estimation` on sys.path, which exposes our local
+        # package `unidepth` and shadows torch-hub's repo package name.
+        local_depth_estimation_dir = str(Path(__file__).resolve().parents[1])
+        removed_entries = [p for p in sys.path if p == local_depth_estimation_dir]
+        if removed_entries:
+            sys.path[:] = [p for p in sys.path if p != local_depth_estimation_dir]
+        try:
+            yield
+        finally:
+            for p in reversed(removed_entries):
+                sys.path.insert(0, p)
+
+    def _drop_conflicting_unidepth_modules(self) -> None:
+        local_unidepth_dir = str(Path(__file__).resolve().parent)
+        to_remove: list[str] = []
+
+        for module_name, module in list(sys.modules.items()):
+            if module_name != "unidepth" and not module_name.startswith("unidepth."):
+                continue
+
+            module_file = getattr(module, "__file__", None)
+            module_path = getattr(module, "__path__", None)
+
+            if module_file and str(module_file).startswith(local_unidepth_dir):
+                to_remove.append(module_name)
+                continue
+
+            if module_path:
+                for entry in module_path:
+                    if str(entry).startswith(local_unidepth_dir):
+                        to_remove.append(module_name)
+                        break
+
+        for module_name in to_remove:
+            sys.modules.pop(module_name, None)
+
+    def _load_unidepth_model(self):
+        # If cache already exists, add it before torch.hub import of hubconf.py.
+        self._add_unidepth_repo_to_syspath()
+        self._drop_conflicting_unidepth_modules()
+
+        load_kwargs = dict(
+            repo_or_dir="lpiccinelli-eth/UniDepth",
+            model="UniDepth",
+            version="v2",
+            backbone="vitb14",
+            pretrained=True,
+            trust_repo=True,
+            force_reload=False,
+        )
+
+        try:
+            with self._without_local_unidepth_shadow():
+                return torch.hub.load(**load_kwargs)
+        except ModuleNotFoundError as exc:
+            # Some torch hub environments do not expose the cached repo on sys.path.
+            if exc.name != "unidepth" and exc.name != "unidepth.models":
+                raise
+
+            repo_dir = self._add_unidepth_repo_to_syspath()
+            if repo_dir is None:
+                raise RuntimeError(
+                    "UniDepth cache repo was not found under torch.hub directory. "
+                    "Try running once with network access or clear torch cache and retry."
+                ) from exc
+
+            self._drop_conflicting_unidepth_modules()
+            with self._without_local_unidepth_shadow():
+                return torch.hub.load(**load_kwargs)
+
     def _patch_padding_function(self):
         """
         Patch the UniDepth model's padding function to fix dimension collapse bug.
@@ -32,8 +137,6 @@ class UniDepthV2(torch.nn.Module):
         The bug is in line 47 and 53 of unidepthv2.py where int() is used instead of
         math.ceil(), causing dimensions to shrink rather than expand.
         """
-        import sys
-
         def fixed_get_paddings(original_shape, aspect_ratio_range):
             """
             Fixed padding calculation that prevents negative padding values.
@@ -74,10 +177,12 @@ class UniDepthV2(torch.nn.Module):
 
             return (pad_left, pad_right, pad_top, pad_bottom), (H_new, W_new)
 
-        # Monkey-patch the module-level function
-        # The function is in unidepth.models.unidepthv2.unidepthv2 module
+        # Monkey-patch the module-level function on the already-loaded module.
         try:
-            import unidepth.models.unidepthv2.unidepthv2 as unidepthv2_module
+            module_name = self.model.__class__.__module__
+            unidepthv2_module = sys.modules.get(module_name)
+            if unidepthv2_module is None:
+                unidepthv2_module = importlib.import_module(module_name)
             unidepthv2_module.get_paddings = fixed_get_paddings
             print("  Applied padding bug fix (GitHub issue #139)")
         except (ImportError, AttributeError) as e:
