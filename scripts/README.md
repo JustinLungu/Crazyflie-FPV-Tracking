@@ -40,6 +40,7 @@ From anywhere:
 - `midas_image.sh`: run MiDaS on one image (`depth_estimation/midas/depth_image_inference.py`)
 - `midas_video.sh`: run MiDaS on a .avi video (`depth_estimation/midas/depth_video_inference.py`)
 - `live_depth.sh`: run live depth with selectable method(s) (`depth_estimation/live_depth_estimation.py`)
+- `drone_control.sh`: run Crazyflie teleop/autonomy entrypoint (`drone_control/start_drone.py`)
 - `live_inference.sh`: run real-time YOLO inference on live feed (`inference/live_inference.py`)
 - `upload_backup.sh`: upload raw/labels backups to Drive (`data/upload_data_drive.py`)
 - `run_tests.sh`: run system/integration test suite (`tests/test_*.py`)

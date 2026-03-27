@@ -1,7 +1,7 @@
 ########################################## Live Camera Constants ##########################################
 
 # Receiver camera device (Linux /dev/videoX).
-CAMERA_DEVICE = "/dev/video2"
+CAMERA_DEVICE = "/dev/video0"
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 CAMERA_FPS_HINT = 30

@@ -1,0 +1,30 @@
+# Python virtual environments
+venv/
+*venv*/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor
+.vscode/
+
+# Build artifacts
+build/
+install/
+log/
+
+# Caches
+cache/
+
+# Archives / backups
+*archive*
+
+# ROS / colcon
+.colcon/
+
+
+# Computer Vision
+camera_feed/raw_data/
+camera_feed/labels_session/
