@@ -19,7 +19,7 @@ FX = 218.867
 DRONE_WIDTH_M = 0.1
 
 # Camera settings (for --live mode).
-DEVICE = "/dev/video2"
+DEVICE = "/dev/video0"
 WIDTH, HEIGHT = 640, 480
 FPS_HINT = 30
 FOURCC = "MJPG"

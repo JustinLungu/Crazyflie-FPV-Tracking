@@ -3,7 +3,16 @@ from pathlib import Path
 import cv2
 from ultralytics import YOLO
 
-from constants import *
+from depth_estimation.naive_bbox_depth.constants import (
+    BUFFER_SIZE,
+    DEVICE,
+    DRONE_WIDTH_M,
+    FOURCC,
+    FPS_HINT,
+    FX,
+    HEIGHT,
+    WIDTH,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

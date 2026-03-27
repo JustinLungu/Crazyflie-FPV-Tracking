@@ -1,26 +1,22 @@
+from pathlib import Path
 import sys
 
-from constants import IMAGE_PATH, MODEL_PATH, OUTPUT_DIR, YOLO_CONF_THRESHOLD
-from utils import live_distance_inference, process_best_detection, yolo_inference
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from depth_estimation.naive_bbox_depth.pipeline import NaiveBBoxDepthPipeline
 
 
 def main() -> None:
+    pipeline = NaiveBBoxDepthPipeline()
+
     if len(sys.argv) > 1 and sys.argv[1] == "--live":
-        live_distance_inference(MODEL_PATH, YOLO_CONF_THRESHOLD)
+        pipeline.run_live()
         return
 
-    image_path = sys.argv[1] if len(sys.argv) > 1 else IMAGE_PATH
-
-    yolo_results, resolved_image_path = yolo_inference(
-        image_path,
-        MODEL_PATH,
-        YOLO_CONF_THRESHOLD,
-    )
-    process_best_detection(
-        yolo_results,
-        str(resolved_image_path),
-        OUTPUT_DIR,
-    )
+    image_path = sys.argv[1] if len(sys.argv) > 1 else None
+    pipeline.run_image(image_path=image_path)
 
 
 if __name__ == "__main__":
