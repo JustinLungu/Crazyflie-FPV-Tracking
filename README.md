@@ -9,6 +9,7 @@ The repository is focused on:
 - organizing labels by class in a structure that supports later train/val/test splitting,
 - training/testing/comparing YOLO models,
 - running live YOLO inference on receiver feed,
+- running flight control and YOLO live view concurrently via one integrated runtime,
 - estimating depth with UniDepth v2 (and an additional bbox-width baseline).
 
 ## Goal
@@ -39,6 +40,13 @@ Crazyflie-FPV-Tracking/
 │   ├── constants.py                     # Live inference config
 │   ├── live_inference.py                # Realtime YOLO inference on camera
 │   └── utils.py
+├── flight_vision/
+│   ├── main.py                          # Combined drone_control + YOLO entrypoint
+│   ├── app.py                           # Concurrent app orchestration
+│   ├── camera_sources.py                # Frame-source interfaces and receiver factory
+│   ├── vision_runtime.py                # YOLO + overlay + OpenCV presenter runtime
+│   ├── constants.py                     # Integrated runtime defaults
+│   └── README.md
 ├── depth_estimation/
 │   ├── unidepth/
 │   │   ├── constants.py                 # UniDepth image/video config
