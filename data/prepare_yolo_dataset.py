@@ -13,6 +13,8 @@ class Sample:
     image_name: str
     label_name: str
     source_session: str
+    image_path: Path | None = None
+    label_path: Path | None = None
 
 
 def sanitize_class_folder_name(name: str) -> str:
@@ -66,12 +68,12 @@ def split_counts(total: int, train_ratio: float, val_ratio: float, test_ratio: f
     n_val = int(total * val_ratio)
     n_test = total - n_train - n_val
 
-    # Keep all splits non-empty for usable metrics when dataset size allows it.
+    # Keep requested splits non-empty for usable metrics when dataset size allows it.
     if total >= 3:
-        if n_val == 0:
+        if val_ratio > 0 and n_val == 0:
             n_val = 1
             n_train = max(1, n_train - 1)
-        if n_test == 0:
+        if test_ratio > 0 and n_test == 0:
             n_test = 1
             if n_train > 1:
                 n_train -= 1
@@ -126,15 +128,17 @@ def split_by_session(
 
     remaining_sessions = list(sessions)
 
-    # Seed val/test with the smallest sessions to keep most data available for train.
-    if len(sessions) >= 3:
+    # Seed requested non-train splits with the smallest sessions to keep train large.
+    non_train_targets = [s for s in ("val", "test") if targets[s] > 0]
+    if non_train_targets and len(sessions) > len(non_train_targets):
         small_first = sorted(sessions, key=lambda s: len(grouped[s]))
-        val_seed = small_first[0]
-        test_seed = small_first[1]
-        for split_name, seed_session in (("val", val_seed), ("test", test_seed)):
+        used_seed_sessions: set[str] = set()
+        for i, split_name in enumerate(non_train_targets):
+            seed_session = small_first[i]
             session_alloc[split_name].append(seed_session)
             split_counts_by_image[split_name] += len(grouped[seed_session])
-        remaining_sessions = [s for s in sessions if s not in {val_seed, test_seed}]
+            used_seed_sessions.add(seed_session)
+        remaining_sessions = [s for s in sessions if s not in used_seed_sessions]
 
     for session_name in remaining_sessions:
         session_size = len(grouped[session_name])
@@ -161,8 +165,10 @@ def split_by_session(
         session_alloc[best_split].append(session_name)
         split_counts_by_image[best_split] += session_size
 
-    # If possible, guarantee val/test are not empty.
+    # If possible, guarantee requested non-train splits are not empty.
     for split_name in ("val", "test"):
+        if targets[split_name] <= 0:
+            continue
         if session_alloc[split_name]:
             continue
         donor = max(
@@ -211,6 +217,56 @@ def split_by_frame_within_each_session(
         result["test"].extend(session_samples[n_train + n_val :])
 
     return result
+
+
+def list_image_files(images_dir: Path) -> list[Path]:
+    image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    return sorted(
+        [
+            p
+            for p in images_dir.iterdir()
+            if p.is_file() and p.suffix.lower() in image_exts
+        ],
+        key=lambda p: p.name,
+    )
+
+
+def collect_manual_test_samples(all_data_dir: Path, manual_dir_name: str) -> list[Sample]:
+    manual_root = all_data_dir / manual_dir_name
+    if not manual_root.exists() or not manual_root.is_dir():
+        return []
+
+    image_dirs: set[Path] = set()
+    direct_images = manual_root / "images"
+    if direct_images.exists() and direct_images.is_dir():
+        image_dirs.add(direct_images)
+
+    for candidate in manual_root.rglob("images"):
+        if candidate.is_dir():
+            image_dirs.add(candidate)
+
+    samples: list[Sample] = []
+    counter = 0
+    for images_dir in sorted(image_dirs, key=lambda p: str(p)):
+        labels_dir = images_dir.parent / "labels"
+        session_tag = images_dir.parent.name
+        for image_path in list_image_files(images_dir):
+            image_suffix = image_path.suffix.lower()
+            image_name = f"manual_test_{counter:06d}{image_suffix}"
+            label_name = f"manual_test_{counter:06d}.txt"
+            label_path = labels_dir / f"{image_path.stem}.txt"
+            samples.append(
+                Sample(
+                    image_name=image_name,
+                    label_name=label_name,
+                    source_session=f"manual_test/{session_tag}",
+                    image_path=image_path,
+                    label_path=label_path,
+                )
+            )
+            counter += 1
+
+    return samples
 
 
 def write_yolo_label(src_label: Path, dst_label: Path, single_class_mode: bool, target_class_id: int) -> None:
@@ -268,8 +324,8 @@ def copy_split_files(
 
     for split_name, samples in split_samples.items():
         for sample in samples:
-            src_image = source_images_dir / sample.image_name
-            src_label = source_labels_dir / sample.label_name
+            src_image = sample.image_path or (source_images_dir / sample.image_name)
+            src_label = sample.label_path or (source_labels_dir / sample.label_name)
             dst_image = output_root / "images" / split_name / sample.image_name
             dst_label = output_root / "labels" / split_name / sample.label_name
 
@@ -383,6 +439,20 @@ def main() -> None:
             "auto, session, frame, per_session_frame."
         )
 
+    manual_test_samples: list[Sample] = []
+    manual_test_used = False
+    if test_ratio <= 1e-12:
+        # User requested no random test split; keep test empty unless manual test data exists.
+        split_samples["test"] = []
+        manual_test_samples = collect_manual_test_samples(
+            all_data_dir=class_dir / LABEL_ALL_DATA_DIR,
+            manual_dir_name=YOLO_MANUAL_TEST_DIR_NAME,
+        )
+        if manual_test_samples:
+            split_samples["test"] = manual_test_samples
+            manual_test_used = True
+            split_strategy = f"{split_strategy}+manual_test"
+
     prepare_output_dirs(output_dataset_dir, YOLO_OVERWRITE_OUTPUT)
     copied, missing_images = copy_split_files(
         split_samples=split_samples,
@@ -410,6 +480,12 @@ def main() -> None:
         f"val={len(split_samples['val'])}, "
         f"test={len(split_samples['test'])}"
     )
+    if test_ratio <= 1e-12:
+        print(
+            "- manual test source: "
+            f"{'used' if manual_test_used else 'not found/empty'} "
+            f"({len(manual_test_samples)} sample(s))"
+        )
     print(f"- copied samples: {copied}")
     print(f"- missing source images skipped: {missing_images}")
     print(f"- split manifest: {split_manifest}")
