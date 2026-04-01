@@ -17,7 +17,7 @@ YOLO_TRAIN_MODEL = "yolo26s.pt"
 # Hardware/performance settings.
 # lower = faster, less VRAM, less detail; higher = better small-object detail, slower, more VRAM.
 YOLO_IMG_SIZE = 1024 #960
-YOLO_EPOCHS = 150
+YOLO_EPOCHS = 100
 # lower = safer for VRAM, noisier gradients; higher = faster/steadier training, may OOM.
 YOLO_BATCH = 8 
 # compute target. 0 = first GPU; cpu = much slower; wrong GPU index fails.

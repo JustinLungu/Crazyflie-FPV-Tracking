@@ -4,6 +4,7 @@
 __pycache__/
 *.log
 .venv/
+.codex
 
 
 # Google drive data backup 

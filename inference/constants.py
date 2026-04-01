@@ -1,7 +1,7 @@
 ########################################## Live Camera Constants ##########################################
 
 # Receiver camera device (Linux /dev/videoX).
-CAMERA_DEVICE = "/dev/video3"
+CAMERA_DEVICE = "/dev/video0"
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 CAMERA_FPS_HINT = 30
@@ -11,7 +11,7 @@ CAMERA_BUFFER_SIZE = 1
 ########################################## YOLO Inference Constants #######################################
 
 # Trained model weights to run on live feed.
-CLASS_NAME = "brushless_drone_yolo26s_20260322_221846"
+CLASS_NAME = "brushless_drone_yolo26s_20260331_172052"
 INFER_MODEL_WEIGHTS = "runs/models/" + CLASS_NAME + "/weights/best.pt"
 
 # Inference behavior.

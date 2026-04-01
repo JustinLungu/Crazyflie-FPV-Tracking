@@ -16,7 +16,8 @@ from inference.constants import (
 # Switch this when you want to control a different drone.
 # Format: "radio://<dongle>/<channel>/<rate>/<address>"
 # Example: "radio://0/80/2M/E7E7E7E7E7"
-FLIGHT_DRONE_URI = DEFAULT_DRONE_URI
+#FLIGHT_DRONE_URI = DEFAULT_DRONE_URI
+FLIGHT_DRONE_URI = "radio://0/80/250K/E7E7E7E7E3"
 
 # Mission name used by DroneControlApp.
 # Common built-in options: "square", "height", "origin_to_point", "roll_pitch_yaw"
