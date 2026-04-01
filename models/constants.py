@@ -14,6 +14,16 @@ YOLO_DATASET_YAML_NAME = "dataset.yaml"
 # Base model to fine-tune.
 YOLO_TRAIN_MODEL = "yolo26s.pt"
 
+# Resume support:
+# - False: start a fresh run with a new timestamped folder.
+# - True: continue from YOLO_RESUME_WEIGHTS (usually latest_last).
+YOLO_RESUME_TRAINING = True
+# Accepted values:
+# - "latest_last": resume most recent runs/models/*/weights/last.pt
+# - explicit .pt path (usually .../weights/last.pt)
+YOLO_RESUME_WEIGHTS = "runs/models/brushless_drone_yolo26s_20260331_172052/weights/last.pt"
+
+
 # Hardware/performance settings.
 # lower = faster, less VRAM, less detail; higher = better small-object detail, slower, more VRAM.
 YOLO_IMG_SIZE = 1024 #960
