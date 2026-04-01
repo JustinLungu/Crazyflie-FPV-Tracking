@@ -1,5 +1,5 @@
 ################################# Video & Image Capture Constants #################################
-DEVICE = "/dev/video0"
+DEVICE = "/dev/video2"
 DRONE_TYPE = "brushless"
 TARGET_FPS = 10  # set 5 or 10 for labeling
 WIDTH, HEIGHT = 640, 480
@@ -14,7 +14,7 @@ VIDEO_FLIE_NAME = "video.avi"
 
 # Constants for tracker labeling
 # Input video to label and output folder for image/label pairs.
-SESSION_NAME = "brushless_session_20260313_144348"
+SESSION_NAME = "test_brushless_session_20260328_215447"
 VIDEO_PATH = "data/raw_data/" + SESSION_NAME + "/video.avi"
 # Root directory where all labeled outputs are stored.
 OUT_DIR = "data/labels"
@@ -32,7 +32,9 @@ LABEL_SESSION_PREFIX = "label_session_"
 # Export target FPS for sampled frames from the source video.
 EXPORT_FPS = 30.0
 
-TRACKER_TYPE = "CSRT" # CSRT/KCF/MOSSE need opencv-contrib;
+# Preferred tracker; code auto-falls back to MIL if requested tracker is unavailable.
+# Typical options: "CSRT", "KCF", "MOSSE", "MIL", "NANO", "VIT", "GOTURN", "DASIAMRPN"
+TRACKER_TYPE = "CSRT"
 STARTUP_PROBE_FRAMES = 30  # skip startup frames that are near-black/blank
 # Slow down preview to give operator more reaction time while validating tracking.
 TRACK_REVIEW_DELAY_S = 0.5 # 0.5s ~= 2 frames per second in review mode.
@@ -98,9 +100,14 @@ YOLO_INCLUDED_SESSIONS = ()
 
 # Split configuration for train/val/test.
 YOLO_SPLIT_SEED = 42
-YOLO_TRAIN_RATIO = 0.70
+YOLO_TRAIN_RATIO = 0.80
 YOLO_VAL_RATIO = 0.20
-YOLO_TEST_RATIO = 0.10
+YOLO_TEST_RATIO = 0
+
+# Optional manual test source under:
+# data/labels/<class_name>/all_data/<YOLO_MANUAL_TEST_DIR_NAME>/
+# If YOLO_TEST_RATIO == 0 and this folder contains images, those samples become YOLO test split.
+YOLO_MANUAL_TEST_DIR_NAME = "test"
 
 # Split mode:
 # - "auto": session split when enough sessions, otherwise frame fallback

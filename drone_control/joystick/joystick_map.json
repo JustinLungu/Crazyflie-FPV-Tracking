@@ -1,0 +1,41 @@
+{
+  "device": "Sony Interactive Entertainment Wireless Controller",
+  "actions": {
+    "ROLL": {
+      "type": "axis",
+      "index": 0,
+      "positive_when_moved": true,
+      "deadband": 0.08,
+      "scale": 1.0
+    },
+    "PITCH": {
+      "type": "axis",
+      "index": 1,
+      "positive_when_moved": false,
+      "deadband": 0.08,
+      "scale": 1.0
+    },
+    "YAW": {
+      "type": "axis",
+      "index": 3,
+      "positive_when_moved": true,
+      "deadband": 0.08,
+      "scale": 1.0
+    },
+    "HEIGHT": {
+      "type": "axis",
+      "index": 4,
+      "positive_when_moved": false,
+      "deadband": 0.08,
+      "scale": 1.0
+    },
+    "TAKEOFF_LAND": {
+      "type": "button",
+      "index": 4
+    },
+    "EMERGENCY_LAND": {
+      "type": "button",
+      "index": 5
+    }
+  }
+}

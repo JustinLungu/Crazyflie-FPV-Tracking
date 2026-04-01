@@ -40,7 +40,9 @@ From anywhere:
 - `midas_image.sh`: run MiDaS on one image (`depth_estimation/midas/depth_image_inference.py`)
 - `midas_video.sh`: run MiDaS on a .avi video (`depth_estimation/midas/depth_video_inference.py`)
 - `live_depth.sh`: run live depth with selectable method(s) (`depth_estimation/live_depth_estimation.py`)
+- `drone_control.sh`: run Crazyflie teleop/autonomy entrypoint (`drone_control/start_drone.py`)
 - `live_inference.sh`: run real-time YOLO inference on live feed (`inference/live_inference.py`)
+- `flight_vision.sh`: run drone control + live YOLO in parallel (`flight_vision/main.py`)
 - `upload_backup.sh`: upload raw/labels backups to Drive (`data/upload_data_drive.py`)
 - `run_tests.sh`: run system/integration test suite (`tests/test_*.py`)
 
@@ -54,4 +56,5 @@ From anywhere:
   - naive bbox depth pipeline: `depth_estimation/naive_bbox_depth/constants.py`
   - camera calibration pipeline: `depth_estimation/camera_calibration/constants.py`
   - inference pipeline: `inference/constants.py`
+  - integrated flight+vision runtime: `flight_vision/constants.py`
 - `create_dataset.sh` forwards optional CLI args to `data/create_dataset.py`.
