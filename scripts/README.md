@@ -33,6 +33,7 @@ From anywhere:
 - `train_yolo.sh`: train model (`models/train_yolo.py`)
 - `test_yolo.sh`: evaluate selected model (`models/test_yolo.py`)
 - `compare_models.sh`: compare multiple models (`models/compare_models.py`)
+- `random_test_preview.sh`: sample random split images, predict, and save one grid (`models/random_test_preview.py`)
 - `camera_calibration.sh`: run camera calibration (`depth_estimation/camera_calibration/calibration.py`)
 - `naive_bbox_depth.sh`: run naive bbox depth (`depth_estimation/naive_bbox_depth/bbox_dist_estimator.py`)
 - `unidepth_image.sh`: run UniDepth on one image (`depth_estimation/unidepth/depth_image_inference.py`)

@@ -64,17 +64,34 @@ YOLO_TRAIN_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_yolo26s"
 # - Ultralytics model alias (e.g. yolo26s.pt)
 YOLO_TEST_WEIGHTS = "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260322_221846/weights/best.pt"
 YOLO_TEST_SPLIT = "test"  # "val" or "test"
-YOLO_TEST_BATCH = 4
+YOLO_TEST_BATCH = 8
 YOLO_TEST_CONF = 0.001
 YOLO_TEST_IOU = 0.7
 YOLO_TEST_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_eval"
+
+########################################## Prediction Preview Constants ###################################
+
+# Random prediction grid from a dataset split (used by models/random_test_preview.py).
+YOLO_PREVIEW_SPLIT = YOLO_TEST_SPLIT
+YOLO_PREVIEW_IMAGE_COUNT = 9
+# Number of preview grids to generate per run.
+YOLO_PREVIEW_RUNS = 5
+# Set int for reproducible sampling, or None for non-deterministic random picks.
+YOLO_PREVIEW_RANDOM_SEED = None
+# Optional output path relative to repo root:
+# - directory path: saves one/many JPGs in that folder
+# - file path (.jpg/.jpeg/.png/.bmp/.webp): used as basename (adds _01, _02, ... when runs > 1)
+# - "" => auto-run folder in runs/evaluation
+YOLO_PREVIEW_OUTPUT_PATH = "runs/evaluation/rand_preview/"
 
 
 ########################################## Multi-Model Comparison Constants ###############################
 
 # Evaluate all listed models on the same dataset split and print one summary table.
 YOLO_COMPARE_MODEL_REFS = (
-    YOLO_TEST_WEIGHTS,
-    "latest_last"
+    "runs/models/backup/weights/best.pt",
+    "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260331_172052/weights/best.pt",
+    
+    #"runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260322_221846/weights/best.pt",
 )
 YOLO_COMPARE_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_compare"

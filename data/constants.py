@@ -14,7 +14,7 @@ VIDEO_FLIE_NAME = "video.avi"
 
 # Constants for tracker labeling
 # Input video to label and output folder for image/label pairs.
-SESSION_NAME = "test_brushless_session_20260328_215447"
+SESSION_NAME = "test_brushless_session_20260328_221820"
 VIDEO_PATH = "data/raw_data/" + SESSION_NAME + "/video.avi"
 # Root directory where all labeled outputs are stored.
 OUT_DIR = "data/labels"
