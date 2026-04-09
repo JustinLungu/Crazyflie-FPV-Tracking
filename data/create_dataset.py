@@ -3,7 +3,7 @@ import csv
 import shutil
 from pathlib import Path
 
-from constants import LABEL_ALL_DATA_DIR, LABEL_CLASS_NAME, LABEL_SESSION_PREFIX, OUT_DIR
+from constants import LABEL_ALL_DATA_DIR, LABEL_CLASS_NAME, OUT_DIR
 from utils import sanitize_class_folder_name
 
 
@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "Optional list of session folder names (or paths). "
-            "If omitted, all sessions in all_data are included."
+            "If omitted, all valid session folders in LABEL_ALL_DATA_DIR are included."
         ),
     )
     parser.add_argument(
@@ -34,6 +34,15 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=OUT_DIR,
         help="Root labels directory (default from constants.py).",
+    )
+    parser.add_argument(
+        "--source-dir",
+        type=str,
+        default=LABEL_ALL_DATA_DIR,
+        help=(
+            "Source folder under labels/<class_name>/ containing session subfolders "
+            "(default from constants.py LABEL_ALL_DATA_DIR)."
+        ),
     )
     parser.add_argument(
         "--output-name",
@@ -49,11 +58,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def is_session_dir(session_dir: Path) -> bool:
+    return (session_dir / "images").is_dir() and (session_dir / "labels").is_dir()
+
+
 def discover_all_sessions(all_data_dir: Path) -> list[Path]:
     sessions = [
         d
         for d in all_data_dir.iterdir()
-        if d.is_dir() and d.name.startswith(LABEL_SESSION_PREFIX)
+        if d.is_dir() and is_session_dir(d)
     ]
     return sorted(sessions, key=lambda d: d.name)
 
@@ -72,6 +85,14 @@ def resolve_selected_sessions(all_data_dir: Path, requested: list[str]) -> list[
         raise RuntimeError(
             f"Session not found: {token}. "
             f"Use folder names under {all_data_dir} or full paths."
+        )
+
+    invalid = [p for p in selected if not is_session_dir(p)]
+    if invalid:
+        formatted = "\n".join(f"- {p}" for p in invalid)
+        raise RuntimeError(
+            "Selected folders must contain both images/ and labels/.\n"
+            f"Invalid selections:\n{formatted}"
         )
     return selected
 
@@ -166,10 +187,13 @@ def main():
     class_name = sanitize_class_folder_name(args.class_name)
     labels_root = Path(args.labels_root)
     class_dir = labels_root / class_name
-    all_data_dir = class_dir / LABEL_ALL_DATA_DIR
+    source_dir_token = args.source_dir.strip()
+    if not source_dir_token:
+        raise RuntimeError("source-dir cannot be empty.")
+    all_data_dir = class_dir / source_dir_token
 
     if not all_data_dir.exists():
-        raise RuntimeError(f"Missing all_data directory: {all_data_dir}")
+        raise RuntimeError(f"Missing source directory: {all_data_dir}")
 
     if args.sessions:
         sessions = resolve_selected_sessions(all_data_dir, args.sessions)
@@ -177,7 +201,10 @@ def main():
         sessions = discover_all_sessions(all_data_dir)
 
     if not sessions:
-        raise RuntimeError(f"No sessions selected from {all_data_dir}")
+        raise RuntimeError(
+            f"No valid session folders found in {all_data_dir}.\n"
+            "Expected each selected folder to contain images/ and labels/."
+        )
 
     dataset_name = args.output_name.strip() if args.output_name.strip() else f"{class_name}_dataset"
     dataset_dir = class_dir / dataset_name
@@ -185,6 +212,7 @@ def main():
     manifest_path = dataset_dir / "manifest.csv"
 
     print(f"Class: {class_name}")
+    print(f"Source folder: {all_data_dir}")
     print(f"Selected sessions ({len(sessions)}):")
     for s in sessions:
         print(f"- {s}")

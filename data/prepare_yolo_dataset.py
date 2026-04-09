@@ -269,6 +269,22 @@ def collect_manual_test_samples(all_data_dir: Path, manual_dir_name: str) -> lis
     return samples
 
 
+def resolve_manual_test_all_data_dir(class_dir: Path, configured_all_data_dir: str) -> Path:
+    """
+    Resolve where manual test sessions should be searched.
+
+    Preference:
+    1) labels/<class>/all_data (explicit canonical location for manual test bucket)
+    2) labels/<class>/<configured_all_data_dir> (backward compatibility)
+    """
+    canonical = class_dir / "all_data"
+    configured = class_dir / configured_all_data_dir
+
+    if canonical.exists() and canonical.is_dir():
+        return canonical
+    return configured
+
+
 def write_yolo_label(src_label: Path, dst_label: Path, single_class_mode: bool, target_class_id: int) -> None:
     if not src_label.exists():
         dst_label.write_text("")
@@ -378,6 +394,7 @@ def main() -> None:
     class_name = sanitize_class_folder_name(YOLO_TARGET_CLASS_NAME)
     labels_root = Path(OUT_DIR)
     class_dir = labels_root / class_name
+    source_bucket_dir = class_dir / LABEL_ALL_DATA_DIR
     source_dataset_dir = class_dir / YOLO_SOURCE_DATASET_NAME
     output_dataset_dir = class_dir / YOLO_OUTPUT_DATASET_NAME
 
@@ -441,11 +458,16 @@ def main() -> None:
 
     manual_test_samples: list[Sample] = []
     manual_test_used = False
+    manual_all_data_dir = resolve_manual_test_all_data_dir(
+        class_dir=class_dir,
+        configured_all_data_dir=LABEL_ALL_DATA_DIR,
+    )
+    manual_test_dir = manual_all_data_dir / YOLO_MANUAL_TEST_DIR_NAME
     if test_ratio <= 1e-12:
         # User requested no random test split; keep test empty unless manual test data exists.
         split_samples["test"] = []
         manual_test_samples = collect_manual_test_samples(
-            all_data_dir=class_dir / LABEL_ALL_DATA_DIR,
+            all_data_dir=manual_all_data_dir,
             manual_dir_name=YOLO_MANUAL_TEST_DIR_NAME,
         )
         if manual_test_samples:
@@ -473,19 +495,15 @@ def main() -> None:
     print(f"- class: {class_name}")
     print(f"- source dataset: {source_dataset_dir}")
     print(f"- output dataset: {output_dataset_dir}")
-    print(f"- split strategy: {split_strategy}")
     print(
         "- split counts: "
         f"train={len(split_samples['train'])}, "
         f"val={len(split_samples['val'])}, "
         f"test={len(split_samples['test'])}"
     )
+    print(f"- source bucket image count ({source_bucket_dir}): {len(samples)}")
     if test_ratio <= 1e-12:
-        print(
-            "- manual test source: "
-            f"{'used' if manual_test_used else 'not found/empty'} "
-            f"({len(manual_test_samples)} sample(s))"
-        )
+        print(f"- manual test image count ({manual_test_dir}): {len(manual_test_samples)}")
     print(f"- copied samples: {copied}")
     print(f"- missing source images skipped: {missing_images}")
     print(f"- split manifest: {split_manifest}")

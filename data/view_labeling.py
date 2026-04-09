@@ -18,7 +18,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help=(
             "Path to a label session directory. "
-            "If omitted, the latest session under labels/<class>/all_data is used."
+            "If omitted, the latest valid session under labels/<class>/<LABEL_ALL_DATA_DIR> is used."
         ),
     )
     parser.add_argument(
@@ -41,9 +41,16 @@ def find_latest_session(labels_root: Path, class_name: str) -> Path:
     if not all_data_dir.exists():
         raise RuntimeError(f"Missing class/all_data directory: {all_data_dir}")
 
-    sessions = [d for d in all_data_dir.iterdir() if d.is_dir() and d.name.startswith(LABEL_SESSION_PREFIX)]
+    sessions = [
+        d
+        for d in all_data_dir.iterdir()
+        if d.is_dir() and (d / "images").is_dir() and (d / "labels").is_dir()
+    ]
     if not sessions:
-        raise RuntimeError(f"No label sessions found in: {all_data_dir}")
+        raise RuntimeError(
+            f"No valid session folders found in: {all_data_dir}\n"
+            "Expected folders with images/ and labels/."
+        )
     return sorted(sessions, key=lambda d: d.name)[-1]
 
 

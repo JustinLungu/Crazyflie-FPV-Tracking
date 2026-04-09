@@ -86,16 +86,17 @@ def sanitize_class_folder_name(name: str) -> str:
 
 def create_unique_label_session_dir(labels_root: Path, class_name: str) -> Path:
     """Create labels/<class_name>/all_data/<label_session_timestamp[_NN]> without overwriting."""
+    session_prefix = "label_session_"
     safe_class_name = sanitize_class_folder_name(class_name)
     class_dir = labels_root / safe_class_name
     all_data_dir = class_dir / LABEL_ALL_DATA_DIR
     all_data_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    session_dir = all_data_dir / f"{LABEL_SESSION_PREFIX}{timestamp}"
+    session_dir = all_data_dir / f"{session_prefix}{timestamp}"
     suffix = 1
     while session_dir.exists():
-        session_dir = all_data_dir / f"{LABEL_SESSION_PREFIX}{timestamp}_{suffix:02d}"
+        session_dir = all_data_dir / f"{session_prefix}{timestamp}_{suffix:02d}"
         suffix += 1
 
     session_dir.mkdir(parents=True, exist_ok=False)

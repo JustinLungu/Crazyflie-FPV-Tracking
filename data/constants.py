@@ -24,10 +24,9 @@ OUT_DIR = "data/labels"
 LABEL_CLASS_NAME = "brushless_drone"
 CLASS_ID = 1
 
-# Each class stores labeled sessions under labels/<class_name>/all_data/.
-LABEL_ALL_DATA_DIR = "all_data"
-# Each labeling run gets its own timestamped subfolder under all_data/.
-LABEL_SESSION_PREFIX = "label_session_"
+# Source folder under labels/<class_name>/.
+# Examples: "all_data", "all_data/train_val", "all_data/test"
+LABEL_ALL_DATA_DIR = "all_data/train_val"
 
 # Export target FPS for sampled frames from the source video.
 EXPORT_FPS = 30.0
@@ -101,7 +100,7 @@ YOLO_INCLUDED_SESSIONS = ()
 # Split configuration for train/val/test.
 YOLO_SPLIT_SEED = 42
 YOLO_TRAIN_RATIO = 0.80
-YOLO_VAL_RATIO = 0.20
+YOLO_VAL_RATIO = 0.10
 YOLO_TEST_RATIO = 0
 
 # Optional manual test source under:
