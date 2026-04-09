@@ -67,6 +67,10 @@ YOLO_TEST_SPLIT = "test"  # "val" or "test"
 YOLO_TEST_BATCH = 8
 YOLO_TEST_CONF = 0.001
 YOLO_TEST_IOU = 0.7
+# Extra duplicate suppression after Ultralytics NMS for evaluation scripts.
+# Rule: if overlap (intersection / smaller-box-area) exceeds this percent,
+# keep only the higher-confidence box.
+YOLO_EVAL_OVERLAP_SUPPRESSION_PERCENT = 30.0
 YOLO_TEST_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_eval"
 
 ########################################## Prediction Preview Constants ###################################
@@ -89,9 +93,9 @@ YOLO_PREVIEW_OUTPUT_PATH = "runs/evaluation/rand_preview/"
 
 # Evaluate all listed models on the same dataset split and print one summary table.
 YOLO_COMPARE_MODEL_REFS = (
-    "runs/models/backup/weights/best.pt",
+    "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260322_221846/weights/best.pt",
     "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260331_172052/weights/best.pt",
-    
-    #"runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260322_221846/weights/best.pt",
+    "runs/models/backup/weights/best.pt",
+
 )
 YOLO_COMPARE_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_compare"

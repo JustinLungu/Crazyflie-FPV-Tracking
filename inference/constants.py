@@ -21,9 +21,10 @@ INFER_CONF_THRESHOLD = 0.4
 INFER_IOU_THRESHOLD = 0.9 #lower = suppress overlapping boxes aggressively, higher = multiple overlapping boxes
 INFER_MAX_DETECTIONS = 10
 # Extra de-duplication for single-drone use case:
-# if two predicted boxes overlap more than this percent IoU,
+# if two predicted boxes overlap more than this percent
+# (intersection divided by the smaller box area),
 # only the higher-confidence one is kept.
-INFER_OVERLAP_SUPPRESSION_PERCENT = 50.0
+INFER_OVERLAP_SUPPRESSION_PERCENT = 30.0
 INFER_DEVICE = 0  # Set "cpu" to run on CPU, 0 = GPU
 INFER_VERBOSE = False
 
@@ -48,7 +49,7 @@ OVERLAY_TEXT_ORIGIN = (12, 28)
 # Run YOLO inference over a recorded label session folder with playback controls.
 # Must point directly to one session dir containing an images/ subfolder.
 # Example: data/labels/brushless_drone/all_data/test/label_session_YYYYMMDD_HHMMSS
-INFER_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_144321"
+INFER_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_161644"
 INFER_REVIEW_WINDOW_NAME = "YOLO Session Inference Review"
 INFER_REVIEW_START_PAUSED = False
 INFER_REVIEW_DELAY_S = 0.15

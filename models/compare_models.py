@@ -34,6 +34,7 @@ def main() -> None:
     print("Evaluating models on shared split...")
     print(f"- dataset: {dataset_yaml}")
     print(f"- split: {YOLO_TEST_SPLIT}")
+    print(f"- overlap suppression: {YOLO_EVAL_OVERLAP_SUPPRESSION_PERCENT:.1f}% (intersection/smaller-box-area)")
     print(f"- comparison dir: {comparison_session_dir}")
     print()
 
@@ -50,19 +51,20 @@ def main() -> None:
         try:
             model = YOLO(resolved_ref)
             t0 = perf_counter()
-            metrics = model.val(
-                data=str(dataset_yaml),
-                split=YOLO_TEST_SPLIT,
-                imgsz=YOLO_IMG_SIZE,
-                batch=YOLO_TEST_BATCH,
-                device=YOLO_DEVICE,
-                workers=YOLO_WORKERS,
-                conf=YOLO_TEST_CONF,
-                iou=YOLO_TEST_IOU,
-                project=str(comparison_session_dir),
-                name=run_name,
-                exist_ok=False,
-            )
+            with patched_ultralytics_overlap_suppression(YOLO_EVAL_OVERLAP_SUPPRESSION_PERCENT):
+                metrics = model.val(
+                    data=str(dataset_yaml),
+                    split=YOLO_TEST_SPLIT,
+                    imgsz=YOLO_IMG_SIZE,
+                    batch=YOLO_TEST_BATCH,
+                    device=YOLO_DEVICE,
+                    workers=YOLO_WORKERS,
+                    conf=YOLO_TEST_CONF,
+                    iou=YOLO_TEST_IOU,
+                    project=str(comparison_session_dir),
+                    name=run_name,
+                    exist_ok=False,
+                )
             elapsed = perf_counter() - t0
             metrics_dict = getattr(metrics, "results_dict", {}) or {}
             speed = getattr(metrics, "speed", {}) or {}

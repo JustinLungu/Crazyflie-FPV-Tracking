@@ -59,4 +59,4 @@ From anywhere:
   - camera calibration pipeline: `depth_estimation/camera_calibration/constants.py`
   - inference pipeline: `inference/constants.py`
   - integrated flight+vision runtime: `flight_vision/constants.py`
-- `create_dataset.sh` forwards optional CLI args to `data/create_dataset.py`.
+- `create_dataset.sh` forwards optional CLI args to `data/create_dataset.py` (for example `--source-dir all_data/train_val`).

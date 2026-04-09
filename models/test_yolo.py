@@ -29,25 +29,27 @@ def main() -> None:
     YOLO = load_ultralytics_yolo()
     model = YOLO(model_ref)
 
-    metrics = model.val(
-        data=str(dataset_yaml),
-        split=YOLO_TEST_SPLIT,
-        imgsz=YOLO_IMG_SIZE,
-        batch=YOLO_TEST_BATCH,
-        device=YOLO_DEVICE,
-        workers=YOLO_WORKERS,
-        conf=YOLO_TEST_CONF,
-        iou=YOLO_TEST_IOU,
-        project=str(project_dir),
-        name=run_name,
-        exist_ok=False,
-    )
+    with patched_ultralytics_overlap_suppression(YOLO_EVAL_OVERLAP_SUPPRESSION_PERCENT):
+        metrics = model.val(
+            data=str(dataset_yaml),
+            split=YOLO_TEST_SPLIT,
+            imgsz=YOLO_IMG_SIZE,
+            batch=YOLO_TEST_BATCH,
+            device=YOLO_DEVICE,
+            workers=YOLO_WORKERS,
+            conf=YOLO_TEST_CONF,
+            iou=YOLO_TEST_IOU,
+            project=str(project_dir),
+            name=run_name,
+            exist_ok=False,
+        )
 
     results_dict = getattr(metrics, "results_dict", {}) or {}
     print("Evaluation complete.")
     print(f"- model: {model_ref}")
     print(f"- split: {YOLO_TEST_SPLIT}")
     print(f"- dataset: {dataset_yaml}")
+    print(f"- overlap suppression: {YOLO_EVAL_OVERLAP_SUPPRESSION_PERCENT:.1f}% (intersection/smaller-box-area)")
     print(f"- run dir: {project_dir / run_name}")
     if results_dict:
         for key, value in sorted(results_dict.items()):

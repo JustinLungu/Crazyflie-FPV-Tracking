@@ -204,6 +204,14 @@ Optional label review:
 ./scripts/create_dataset.sh --class-name <class_name> --overwrite
 ```
 
+By default this collects all direct subfolders under:
+
+```text
+data/labels/<class_name>/<LABEL_ALL_DATA_DIR>/
+```
+
+and includes folders that contain both `images/` and `labels/` (folder name can be anything, not only `label_session_*`).
+
 Default output:
 
 ```text

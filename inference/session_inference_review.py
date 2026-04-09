@@ -79,7 +79,7 @@ def main() -> None:
     print(f"Loaded model: {INFER_MODEL_WEIGHTS}")
     print(f"Review session: {session_dir}")
     print(f"Images: {len(image_paths)}")
-    print(f"Overlap suppression: {INFER_OVERLAP_SUPPRESSION_PERCENT:.1f}% IoU")
+    print(f"Overlap suppression: {INFER_OVERLAP_SUPPRESSION_PERCENT:.1f}% overlap")
     print("Controls")
     print("space: play/pause")
     print("a or Left Arrow: previous frame")

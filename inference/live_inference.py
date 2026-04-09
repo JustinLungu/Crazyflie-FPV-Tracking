@@ -38,7 +38,7 @@ def main() -> None:
 
     print(f"Loaded model: {INFER_MODEL_WEIGHTS}")
     print(f"Camera: {CAMERA_DEVICE} ({CAMERA_WIDTH}x{CAMERA_HEIGHT})")
-    print(f"Overlap suppression: {INFER_OVERLAP_SUPPRESSION_PERCENT:.1f}% IoU")
+    print(f"Overlap suppression: {INFER_OVERLAP_SUPPRESSION_PERCENT:.1f}% overlap")
     print("Press q or ESC to quit.")
 
     prev_loop_time = time.perf_counter()

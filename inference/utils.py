@@ -19,7 +19,10 @@ def load_yolo_model(model_ref: str) -> YOLO:
     return YOLO(model_ref)
 
 
-def compute_iou_xyxy(box_a: tuple[float, float, float, float], box_b: tuple[float, float, float, float]) -> float:
+def compute_overlap_ratio_xyxy(
+    box_a: tuple[float, float, float, float],
+    box_b: tuple[float, float, float, float],
+) -> float:
     ax1, ay1, ax2, ay2 = box_a
     bx1, by1, bx2, by2 = box_b
 
@@ -35,10 +38,12 @@ def compute_iou_xyxy(box_a: tuple[float, float, float, float], box_b: tuple[floa
 
     area_a = max(0.0, ax2 - ax1) * max(0.0, ay2 - ay1)
     area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
-    union = area_a + area_b - inter_area
-    if union <= 0:
+    min_area = min(area_a, area_b)
+    if min_area <= 0:
         return 0.0
-    return inter_area / union
+    # Overlap ratio relative to the smaller box:
+    # 1.0 means the smaller box is fully inside the larger box.
+    return inter_area / min_area
 
 
 def suppress_overlapping_detections_indices(
@@ -54,7 +59,7 @@ def suppress_overlapping_detections_indices(
         has_high_overlap = False
         for kept_idx in kept:
             kept_box = boxes_xyxy[kept_idx]
-            if compute_iou_xyxy(current_box, kept_box) > overlap_threshold:
+            if compute_overlap_ratio_xyxy(current_box, kept_box) > overlap_threshold:
                 has_high_overlap = True
                 break
         if not has_high_overlap:
