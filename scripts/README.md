@@ -43,6 +43,7 @@ From anywhere:
 - `live_depth.sh`: run live depth with selectable method(s) (`depth_estimation/live_depth_estimation.py`)
 - `drone_control.sh`: run Crazyflie teleop/autonomy entrypoint (`drone_control/start_drone.py`)
 - `live_inference.sh`: run real-time YOLO inference on live feed (`inference/live_inference.py`)
+- `session_inference_review.sh`: run YOLO inference review on one configured label session (`inference/session_inference_review.py`)
 - `flight_vision.sh`: run drone control + live YOLO in parallel (`flight_vision/main.py`)
 - `upload_backup.sh`: upload raw/labels backups to Drive (`data/upload_data_drive.py`)
 - `run_tests.sh`: run system/integration test suite (`tests/test_*.py`)
