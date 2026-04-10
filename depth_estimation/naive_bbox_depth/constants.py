@@ -28,11 +28,13 @@ BUFFER_SIZE = 1
 
 # Session review settings (recorded test session playback).
 # Must point to one session folder containing images/.
-NAIVE_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_144321"
+NAIVE_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_164310"
 NAIVE_REVIEW_WINDOW_NAME = "Naive Depth Session Review"
 NAIVE_REVIEW_START_PAUSED = False
 NAIVE_REVIEW_DELAY_S = 0.15
 NAIVE_REVIEW_ALLOW_IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
+NAIVE_REVIEW_WRITE_LOG = True
+NAIVE_REVIEW_LOG_DIR = OUTPUT_DIR + "/review_logs"
 
 # Overlay text for session review.
 NAIVE_REVIEW_TEXT_ORIGIN = (12, 28)

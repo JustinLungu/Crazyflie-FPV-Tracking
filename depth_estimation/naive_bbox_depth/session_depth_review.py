@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import csv
+from datetime import datetime
 from pathlib import Path
 import sys
+from typing import TextIO
 
 import cv2
 
@@ -20,6 +23,7 @@ from depth_estimation.naive_bbox_depth.constants import (
     MODEL_PATH,
     NAIVE_REVIEW_ALLOW_IMAGE_EXTS,
     NAIVE_REVIEW_DELAY_S,
+    NAIVE_REVIEW_LOG_DIR,
     NAIVE_REVIEW_SESSION_DIR,
     NAIVE_REVIEW_START_PAUSED,
     NAIVE_REVIEW_TEXT_COLOR,
@@ -27,11 +31,12 @@ from depth_estimation.naive_bbox_depth.constants import (
     NAIVE_REVIEW_TEXT_ORIGIN,
     NAIVE_REVIEW_TEXT_SCALE,
     NAIVE_REVIEW_TEXT_THICKNESS,
+    NAIVE_REVIEW_WRITE_LOG,
     NAIVE_REVIEW_WINDOW_NAME,
     YOLO_CONF_THRESHOLD,
 )
 from depth_estimation.naive_bbox_depth.pipeline import NaiveBBoxDepthPipeline
-from depth_estimation.naive_bbox_depth.utils import resolve_repo_path
+from depth_estimation.naive_bbox_depth.utils import ensure_output_dir, resolve_repo_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -86,6 +91,18 @@ def parse_args() -> argparse.Namespace:
         default=DRONE_WIDTH_M,
         help="Real drone width in meters.",
     )
+    parser.add_argument(
+        "--write-log",
+        action=argparse.BooleanOptionalAction,
+        default=NAIVE_REVIEW_WRITE_LOG,
+        help="Write per-frame metrics CSV.",
+    )
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        default=NAIVE_REVIEW_LOG_DIR,
+        help="Directory for per-frame metrics CSV.",
+    )
     return parser.parse_args()
 
 
@@ -119,6 +136,54 @@ def collect_review_images(
     return image_paths
 
 
+def open_metrics_logger(session_dir: Path, log_dir: str):
+    output_dir = ensure_output_dir(log_dir)
+    run_tag = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = output_dir / f"{session_dir.name}_naive_depth_{run_tag}.csv"
+    log_file = log_path.open("w", newline="", encoding="utf-8")
+    writer = csv.DictWriter(
+        log_file,
+        fieldnames=[
+            "frame_index",
+            "image_name",
+            "processed_at_iso",
+            "infer_ms",
+            "detection_count",
+            "confidence",
+            "bbox_width_px",
+            "bbox_center_x_px",
+            "bbox_center_y_px",
+            "distance_m",
+        ],
+    )
+    writer.writeheader()
+    return log_path, log_file, writer
+
+
+def write_metrics_row(
+    writer: csv.DictWriter,
+    log_file: TextIO,
+    frame_index: int,
+    image_name: str,
+    metrics: dict,
+) -> None:
+    writer.writerow(
+        {
+            "frame_index": frame_index,
+            "image_name": image_name,
+            "processed_at_iso": datetime.now().isoformat(timespec="milliseconds"),
+            "infer_ms": metrics.get("infer_ms", ""),
+            "detection_count": metrics.get("detection_count", 0),
+            "confidence": metrics.get("confidence", ""),
+            "bbox_width_px": metrics.get("bbox_width_px", ""),
+            "bbox_center_x_px": metrics.get("bbox_center_x_px", ""),
+            "bbox_center_y_px": metrics.get("bbox_center_y_px", ""),
+            "distance_m": metrics.get("distance_m", ""),
+        }
+    )
+    log_file.flush()
+
+
 def draw_session_overlay(
     frame,
     session_name: str,
@@ -132,6 +197,7 @@ def draw_session_overlay(
     x, y = NAIVE_REVIEW_TEXT_ORIGIN
     status = "PLAY" if playing else "PAUSE"
 
+    detection_count = int(metrics.get("detection_count", 0))
     infer_ms = float(metrics.get("infer_ms", 0.0))
     distance_m = metrics.get("distance_m")
     confidence = metrics.get("confidence")
@@ -150,7 +216,7 @@ def draw_session_overlay(
         bbox_text = f"bbox_w: {float(bbox_width_px):.1f}px"
 
     lines = [
-        f"{status}  frame {index + 1}/{total}",
+        f"{status}  frame {index + 1}/{total}  detections: {detection_count}",
         f"inference: {infer_ms:.1f} ms  delay: {delay_s:.2f}s",
         f"{depth_text}  {conf_text}  {bbox_text}",
         f"session: {session_name}",
@@ -199,6 +265,16 @@ def main() -> None:
     print("d or Right Arrow: next frame")
     print("q or ESC: quit")
 
+    log_path = None
+    log_file = None
+    log_writer = None
+    if args.write_log:
+        log_path, log_file, log_writer = open_metrics_logger(
+            session_dir=session_dir,
+            log_dir=args.log_dir,
+        )
+        print(f"Frame log: {log_path}")
+
     index = 0
     cached_index = -1
     cached_frame = None
@@ -223,6 +299,15 @@ def main() -> None:
                 cached_frame = output.frame_bgr
                 cached_metrics = dict(output.metrics)
                 cached_index = index
+
+                if log_writer is not None and log_file is not None:
+                    write_metrics_row(
+                        writer=log_writer,
+                        log_file=log_file,
+                        frame_index=index,
+                        image_name=image_path.name,
+                        metrics=cached_metrics,
+                    )
 
             display = cached_frame.copy()
             draw_session_overlay(
@@ -260,6 +345,8 @@ def main() -> None:
                 playing = False
                 continue
     finally:
+        if log_file is not None:
+            log_file.close()
         cv2.destroyAllWindows()
         pipeline.close()
 

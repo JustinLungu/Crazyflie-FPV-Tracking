@@ -62,7 +62,13 @@ def yolo_inference(image_path: str, model_path: str, conf_threshold: float):
     return results, image_abs
 
 
-def process_best_detection(results, image_path: str, output_dir: str):
+def process_best_detection(
+    results,
+    image_path: str,
+    output_dir: str,
+    fx: float = FX,
+    real_width_m: float = DRONE_WIDTH_M,
+):
     image_abs = resolve_repo_path(image_path)
     image = cv2.imread(str(image_abs))
     if image is None:
@@ -89,8 +95,8 @@ def process_best_detection(results, image_path: str, output_dir: str):
 
     estimate = estimate_distance_from_bbox(
         bbox_xyxy=best_detection,
-        fx=FX,
-        real_width_m=DRONE_WIDTH_M,
+        fx=fx,
+        real_width_m=real_width_m,
     )
 
     x1, y1, x2, y2 = map(int, best_detection)

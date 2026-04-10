@@ -30,6 +30,9 @@ A minimal depth baseline based on bounding-box width.
   - `depth_estimation/output/naive_bbox/`
 - Output filename format:
   - `<input_image_stem>_distance_estimate.jpg`
+- Session review logs (per-frame CSV):
+  - `depth_estimation/output/naive_bbox/review_logs/`
+  - columns: `frame_index`, `infer_ms`, `confidence`, `bbox_width_px`, `bbox_center_x_px`, `bbox_center_y_px`, `distance_m`
 
 ## Run
 
@@ -41,4 +44,5 @@ From repo root:
 ./scripts/naive_bbox_depth.sh --live
 ./scripts/session_naive_depth_review.sh
 ./scripts/session_naive_depth_review.sh --session data/labels/brushless_drone/all_data/test/label_session_YYYYMMDD_HHMMSS
+./scripts/session_naive_depth_review.sh --no-write-log
 ```
