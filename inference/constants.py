@@ -11,9 +11,9 @@ CAMERA_BUFFER_SIZE = 1
 ########################################## YOLO Inference Constants #######################################
 
 # Trained model weights to run on live feed.
-CLASS_NAME = "brushless_drone_yolo26s_20260331_172052"
-#INFER_MODEL_WEIGHTS = "runs/models/" + CLASS_NAME + "/weights/best.pt"
-INFER_MODEL_WEIGHTS = "runs/models/backup/weights/best.pt"
+CLASS_NAME = "brushless_drone_yolo26s_20260410_045839"
+INFER_MODEL_WEIGHTS = "runs/models/" + CLASS_NAME + "/weights/best.pt"
+#INFER_MODEL_WEIGHTS = "runs/models/backup/weights/best.pt"
 
 # Inference behavior.
 INFER_IMAGE_SIZE = 1024
@@ -49,7 +49,7 @@ OVERLAY_TEXT_ORIGIN = (12, 28)
 # Run YOLO inference over a recorded label session folder with playback controls.
 # Must point directly to one session dir containing an images/ subfolder.
 # Example: data/labels/brushless_drone/all_data/test/label_session_YYYYMMDD_HHMMSS
-INFER_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_161644"
+INFER_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_144321"
 INFER_REVIEW_WINDOW_NAME = "YOLO Session Inference Review"
 INFER_REVIEW_START_PAUSED = False
 INFER_REVIEW_DELAY_S = 0.15

@@ -20,6 +20,7 @@ Use this README as a quick overview. Detailed setup, constants, and usage live i
 - `naive_bbox_depth/`
   - Simple baseline distance estimation from YOLO bounding-box width.
   - Fast and lightweight, mainly for rough range estimates.
+  - Includes a session playback reviewer (`session_depth_review.py`) for recorded test sessions.
 
 - `unidepth/`
   - Monocular depth with UniDepth v2 for image and video input.

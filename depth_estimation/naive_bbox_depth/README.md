@@ -14,6 +14,7 @@ A minimal depth baseline based on bounding-box width.
 ## Files
 
 - `bbox_dist_estimator.py`: CLI entrypoint.
+- `session_depth_review.py`: interactive playback over a recorded session (`images/`) with YOLO + naive depth overlay.
 - `utils.py`: detection processing, distance math, drawing, camera loop.
 - `constants.py`:
   - `MODEL_PATH`: YOLO weights path
@@ -21,6 +22,7 @@ A minimal depth baseline based on bounding-box width.
   - `DRONE_WIDTH_M`: assumed real drone width
   - `OUTPUT_DIR`: non-live save path
   - camera settings for `--live`
+  - session-review settings for playback (`NAIVE_REVIEW_*`)
 
 ## Outputs
 
@@ -37,4 +39,6 @@ From repo root:
 ./scripts/naive_bbox_depth.sh
 ./scripts/naive_bbox_depth.sh <image_path>
 ./scripts/naive_bbox_depth.sh --live
+./scripts/session_naive_depth_review.sh
+./scripts/session_naive_depth_review.sh --session data/labels/brushless_drone/all_data/test/label_session_YYYYMMDD_HHMMSS
 ```

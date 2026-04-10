@@ -17,7 +17,7 @@ YOLO_TRAIN_MODEL = "yolo26s.pt"
 # Resume support:
 # - False: start a fresh run with a new timestamped folder.
 # - True: continue from YOLO_RESUME_WEIGHTS (usually latest_last).
-YOLO_RESUME_TRAINING = True
+YOLO_RESUME_TRAINING = False
 # Accepted values:
 # - "latest_last": resume most recent runs/models/*/weights/last.pt
 # - explicit .pt path (usually .../weights/last.pt)
@@ -62,7 +62,7 @@ YOLO_TRAIN_RUN_LABEL = YOLO_TARGET_CLASS_NAME + "_yolo26s"
 # - "latest_last": latest run in runs/models/*, last.pt
 # - explicit local path to .pt (ex: runs/models/green_drone_yolo26s_20260215_170000/weights/best.pt)
 # - Ultralytics model alias (e.g. yolo26s.pt)
-YOLO_TEST_WEIGHTS = "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260322_221846/weights/best.pt"
+YOLO_TEST_WEIGHTS = "runs/models/" + YOLO_TARGET_CLASS_NAME + "_yolo26s_20260410_045839/weights/best.pt"
 YOLO_TEST_SPLIT = "test"  # "val" or "test"
 YOLO_TEST_BATCH = 8
 YOLO_TEST_CONF = 0.001
