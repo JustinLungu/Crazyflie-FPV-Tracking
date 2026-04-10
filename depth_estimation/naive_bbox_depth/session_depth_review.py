@@ -24,6 +24,7 @@ from depth_estimation.naive_bbox_depth.constants import (
     NAIVE_REVIEW_ALLOW_IMAGE_EXTS,
     NAIVE_REVIEW_DELAY_S,
     NAIVE_REVIEW_LOG_DIR,
+    NAIVE_REVIEW_PRINT_EVERY_N_FRAMES,
     NAIVE_REVIEW_SESSION_DIR,
     NAIVE_REVIEW_START_PAUSED,
     NAIVE_REVIEW_TEXT_COLOR,
@@ -148,11 +149,20 @@ def open_metrics_logger(session_dir: Path, log_dir: str):
             "image_name",
             "processed_at_iso",
             "infer_ms",
+            "track_state",
+            "frames_since_detection",
+            "estimate_source",
+            "is_stale",
+            "filter_mode",
             "detection_count",
             "confidence",
+            "raw_bbox_width_px",
             "bbox_width_px",
+            "raw_bbox_center_x_px",
+            "raw_bbox_center_y_px",
             "bbox_center_x_px",
             "bbox_center_y_px",
+            "raw_distance_m",
             "distance_m",
         ],
     )
@@ -173,11 +183,20 @@ def write_metrics_row(
             "image_name": image_name,
             "processed_at_iso": datetime.now().isoformat(timespec="milliseconds"),
             "infer_ms": metrics.get("infer_ms", ""),
+            "track_state": metrics.get("track_state", ""),
+            "frames_since_detection": metrics.get("frames_since_detection", ""),
+            "estimate_source": metrics.get("estimate_source", ""),
+            "is_stale": metrics.get("is_stale", ""),
+            "filter_mode": metrics.get("filter_mode", ""),
             "detection_count": metrics.get("detection_count", 0),
             "confidence": metrics.get("confidence", ""),
+            "raw_bbox_width_px": metrics.get("raw_bbox_width_px", ""),
             "bbox_width_px": metrics.get("bbox_width_px", ""),
+            "raw_bbox_center_x_px": metrics.get("raw_bbox_center_x_px", ""),
+            "raw_bbox_center_y_px": metrics.get("raw_bbox_center_y_px", ""),
             "bbox_center_x_px": metrics.get("bbox_center_x_px", ""),
             "bbox_center_y_px": metrics.get("bbox_center_y_px", ""),
+            "raw_distance_m": metrics.get("raw_distance_m", ""),
             "distance_m": metrics.get("distance_m", ""),
         }
     )
@@ -197,15 +216,20 @@ def draw_session_overlay(
     x, y = NAIVE_REVIEW_TEXT_ORIGIN
     status = "PLAY" if playing else "PAUSE"
 
+    track_state = str(metrics.get("track_state", "unknown"))
     detection_count = int(metrics.get("detection_count", 0))
     infer_ms = float(metrics.get("infer_ms", 0.0))
     distance_m = metrics.get("distance_m")
+    raw_distance_m = metrics.get("raw_distance_m")
     confidence = metrics.get("confidence")
     bbox_width_px = metrics.get("bbox_width_px")
+    raw_bbox_width_px = metrics.get("raw_bbox_width_px")
 
     depth_text = "dist: n/a"
     if distance_m is not None:
         depth_text = f"dist: {float(distance_m):.3f} m"
+    if raw_distance_m is not None:
+        depth_text = f"{depth_text} (raw {float(raw_distance_m):.3f})"
 
     conf_text = "conf: n/a"
     if confidence is not None:
@@ -214,9 +238,11 @@ def draw_session_overlay(
     bbox_text = "bbox_w: n/a"
     if bbox_width_px is not None:
         bbox_text = f"bbox_w: {float(bbox_width_px):.1f}px"
+    if raw_bbox_width_px is not None:
+        bbox_text = f"{bbox_text} (raw {float(raw_bbox_width_px):.1f})"
 
     lines = [
-        f"{status}  frame {index + 1}/{total}  detections: {detection_count}",
+        f"{status}  frame {index + 1}/{total}  detections: {detection_count}  state: {track_state}",
         f"inference: {infer_ms:.1f} ms  delay: {delay_s:.2f}s",
         f"{depth_text}  {conf_text}  {bbox_text}",
         f"session: {session_name}",
@@ -233,6 +259,45 @@ def draw_session_overlay(
             NAIVE_REVIEW_TEXT_THICKNESS,
             cv2.LINE_AA,
         )
+
+
+def ensure_processed_upto_index(
+    target_index: int,
+    image_paths: list[Path],
+    processed_frames: list,
+    processed_metrics: list[dict],
+    pipeline: NaiveBBoxDepthPipeline,
+    log_writer: csv.DictWriter | None,
+    log_file: TextIO | None,
+) -> tuple[list, list[dict], list[Path]]:
+    while len(processed_frames) <= target_index and len(processed_frames) < len(image_paths):
+        frame_index = len(processed_frames)
+        image_path = image_paths[frame_index]
+        frame = cv2.imread(str(image_path))
+        if frame is None:
+            print(f"Warning: could not read image {image_path}. Skipping.")
+            image_paths.pop(frame_index)
+            if not image_paths:
+                break
+            continue
+
+        output = pipeline.process_live_frame(frame)
+        processed_frames.append(output.frame_bgr)
+        processed_metrics.append(dict(output.metrics))
+
+        if log_writer is not None and log_file is not None:
+            write_metrics_row(
+                writer=log_writer,
+                log_file=log_file,
+                frame_index=frame_index,
+                image_name=image_path.name,
+                metrics=output.metrics,
+            )
+
+        if frame_index % max(1, NAIVE_REVIEW_PRINT_EVERY_N_FRAMES) == 0:
+            print(f"Processed {frame_index + 1}/{len(image_paths)} frames for review.")
+
+    return processed_frames, processed_metrics, image_paths
 
 
 def main() -> None:
@@ -259,6 +324,13 @@ def main() -> None:
     print(f"Images: {len(image_paths)}")
     print(f"Model: {args.model_path}")
     print(f"fx={float(args.fx):.3f}, real_width_m={float(args.real_width_m):.4f}")
+    print(
+        "filter mode="
+        f"{pipeline.filter_mode}, dist={pipeline.filter_distance}, center={pipeline.filter_center}, width={pipeline.filter_width}"
+    )
+    print(
+        f"dropout hold/stale={pipeline.dropout_hold_frames}/{pipeline.dropout_stale_frames}"
+    )
     print("Controls")
     print("space: play/pause")
     print("a or Left Arrow: previous frame")
@@ -276,40 +348,28 @@ def main() -> None:
         print(f"Frame log: {log_path}")
 
     index = 0
-    cached_index = -1
-    cached_frame = None
-    cached_metrics = {}
+    processed_frames: list = []
+    processed_metrics: list[dict] = []
 
     try:
         while True:
+            processed_frames, processed_metrics, image_paths = ensure_processed_upto_index(
+                target_index=index,
+                image_paths=image_paths,
+                processed_frames=processed_frames,
+                processed_metrics=processed_metrics,
+                pipeline=pipeline,
+                log_writer=log_writer,
+                log_file=log_file,
+            )
+            if not image_paths:
+                print("No readable images left. Exiting.")
+                break
+
+            index = min(index, len(image_paths) - 1)
             image_path = image_paths[index]
-            if cached_index != index or cached_frame is None:
-                frame = cv2.imread(str(image_path))
-                if frame is None:
-                    print(f"Warning: could not read image {image_path}. Skipping.")
-                    image_paths.pop(index)
-                    if not image_paths:
-                        print("No readable images left. Exiting.")
-                        break
-                    index = min(index, len(image_paths) - 1)
-                    cached_index = -1
-                    continue
-
-                output = pipeline.process_live_frame(frame)
-                cached_frame = output.frame_bgr
-                cached_metrics = dict(output.metrics)
-                cached_index = index
-
-                if log_writer is not None and log_file is not None:
-                    write_metrics_row(
-                        writer=log_writer,
-                        log_file=log_file,
-                        frame_index=index,
-                        image_name=image_path.name,
-                        metrics=cached_metrics,
-                    )
-
-            display = cached_frame.copy()
+            display = processed_frames[index].copy()
+            frame_metrics = processed_metrics[index]
             draw_session_overlay(
                 frame=display,
                 session_name=session_dir.name,
@@ -318,7 +378,7 @@ def main() -> None:
                 total=len(image_paths),
                 playing=playing,
                 delay_s=delay_s,
-                metrics=cached_metrics,
+                metrics=frame_metrics,
             )
             cv2.imshow(args.window_name, display)
             key = cv2.waitKeyEx(delay_ms if playing else 0)

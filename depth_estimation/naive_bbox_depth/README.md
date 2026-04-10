@@ -32,7 +32,28 @@ A minimal depth baseline based on bounding-box width.
   - `<input_image_stem>_distance_estimate.jpg`
 - Session review logs (per-frame CSV):
   - `depth_estimation/output/naive_bbox/review_logs/`
-  - columns: `frame_index`, `infer_ms`, `confidence`, `bbox_width_px`, `bbox_center_x_px`, `bbox_center_y_px`, `distance_m`
+  - columns include raw + filtered values:
+  - `frame_index`, `infer_ms`, `track_state`, `frames_since_detection`, `estimate_source`
+  - `raw_bbox_width_px`, `bbox_width_px`, `raw_bbox_center_x_px`, `bbox_center_x_px`
+  - `raw_distance_m`, `distance_m`
+
+## Filtering
+
+All filtering behavior is controlled in `constants.py`:
+
+- `NAIVE_FILTER_MODE`: `none`, `ema`, or `kalman`
+- signal toggles: `NAIVE_FILTER_DISTANCE`, `NAIVE_FILTER_CENTER`, `NAIVE_FILTER_WIDTH`
+- EMA params: `NAIVE_EMA_ALPHA_*`
+- Kalman params: `NAIVE_KALMAN_*`
+- dropout handling: `NAIVE_DROPOUT_HOLD_FRAMES`, `NAIVE_DROPOUT_STALE_FRAMES`
+- runtime `track_state`: `tracked`, `held`, `stale`, `lost`
+
+Suggested progression:
+
+1. Version 1: set `NAIVE_FILTER_MODE="ema"`, `NAIVE_FILTER_DISTANCE=True`, center/width `False`.
+2. Version 2: enable `NAIVE_FILTER_CENTER=True`.
+3. Version 3: tune dropout hold/stale thresholds.
+4. Version 4: switch `NAIVE_FILTER_MODE="kalman"` if EMA is not enough.
 
 ## Run
 
