@@ -1,6 +1,8 @@
 from pathlib import Path
+import math
 
 import cv2
+import numpy as np
 from ultralytics import YOLO
 
 from depth_estimation.naive_bbox_depth.constants import (
@@ -26,6 +28,60 @@ def ensure_output_dir(path: str | Path) -> Path:
     output_dir = resolve_repo_path(str(path))
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
+
+
+def load_intrinsics_from_camera_matrix(camera_matrix_path: str):
+    matrix_abs = resolve_repo_path(camera_matrix_path)
+    if not matrix_abs.exists():
+        raise FileNotFoundError(f"Could not read camera matrix: {matrix_abs}")
+
+    camera_matrix = np.load(str(matrix_abs))
+    if camera_matrix.shape != (3, 3):
+        raise ValueError(
+            f"Camera matrix at {matrix_abs} must have shape (3, 3), got {camera_matrix.shape}"
+        )
+
+    fx = float(camera_matrix[0, 0])
+    fy = float(camera_matrix[1, 1])
+    cx = float(camera_matrix[0, 2])
+    cy = float(camera_matrix[1, 2])
+    return {
+        "fx": fx,
+        "fy": fy,
+        "cx": cx,
+        "cy": cy,
+        "camera_matrix_path": str(matrix_abs),
+    }
+
+
+def estimate_relative_position_from_center(
+    center_px: tuple[float, float],
+    z_m: float,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    y_axis_convention: str = "up",
+):
+    u, v = center_px
+    x_rel_m = ((u - cx) / fx) * z_m
+    y_img_down_m = ((v - cy) / fy) * z_m
+
+    convention = y_axis_convention.strip().lower()
+    if convention not in {"up", "down"}:
+        raise ValueError(f"Unsupported y-axis convention: {y_axis_convention}")
+    y_rel_m = -y_img_down_m if convention == "up" else y_img_down_m
+
+    yaw_error_rad = math.atan((u - cx) / fx)
+    yaw_error_deg = math.degrees(yaw_error_rad)
+
+    return {
+        "x_rel_m": float(x_rel_m),
+        "y_rel_m": float(y_rel_m),
+        "z_rel_m": float(z_m),
+        "yaw_error_rad": float(yaw_error_rad),
+        "yaw_error_deg": float(yaw_error_deg),
+    }
 
 
 def estimate_distance_from_bbox(

@@ -11,6 +11,9 @@ from depth_estimation.naive_bbox_depth.constants import (
     NAIVE_DROPOUT_HOLD_FRAMES,
     NAIVE_DROPOUT_STALE_FRAMES,
     DRONE_WIDTH_M,
+    FY,
+    CX,
+    CY,
     FOURCC,
     FPS_HINT,
     FX,
@@ -19,17 +22,22 @@ from depth_estimation.naive_bbox_depth.constants import (
     NAIVE_EMA_ALPHA_CENTER,
     NAIVE_EMA_ALPHA_DISTANCE,
     NAIVE_EMA_ALPHA_WIDTH,
+    NAIVE_ENABLE_RELATIVE_POSITION,
     NAIVE_FILTER_CENTER,
     NAIVE_FILTER_DISTANCE,
     NAIVE_FILTER_MODE,
     NAIVE_FILTER_WIDTH,
+    NAIVE_INTRINSICS_FALLBACK_TO_MANUAL,
+    NAIVE_INTRINSICS_SOURCE,
     NAIVE_KALMAN_MEAS_VAR_CENTER,
     NAIVE_KALMAN_MEAS_VAR_DISTANCE,
     NAIVE_KALMAN_MEAS_VAR_WIDTH,
     NAIVE_KALMAN_PROCESS_VAR_CENTER,
     NAIVE_KALMAN_PROCESS_VAR_DISTANCE,
     NAIVE_KALMAN_PROCESS_VAR_WIDTH,
+    NAIVE_CAMERA_MATRIX_PATH,
     NAIVE_RESET_FILTER_ON_LOST,
+    NAIVE_Y_AXIS_CONVENTION,
     KEY_QUIT,
     MODEL_PATH,
     OUTPUT_DIR,
@@ -38,8 +46,10 @@ from depth_estimation.naive_bbox_depth.constants import (
 )
 from depth_estimation.naive_bbox_depth.filtering import ScalarSignalFilter
 from depth_estimation.naive_bbox_depth.utils import (
+    estimate_relative_position_from_center,
     ensure_output_dir,
     estimate_distance_from_bbox,
+    load_intrinsics_from_camera_matrix,
     resolve_repo_path,
 )
 from depth_estimation.pipeline_base import LiveDepthPipeline, LiveFrameOutput
@@ -53,7 +63,15 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         model_path: str = MODEL_PATH,
         conf_threshold: float = YOLO_CONF_THRESHOLD,
         fx: float = FX,
+        fy: float = FY,
+        cx: float = CX,
+        cy: float = CY,
         real_width_m: float = DRONE_WIDTH_M,
+        intrinsics_source: str = NAIVE_INTRINSICS_SOURCE,
+        camera_matrix_path: str = NAIVE_CAMERA_MATRIX_PATH,
+        intrinsics_fallback_to_manual: bool = NAIVE_INTRINSICS_FALLBACK_TO_MANUAL,
+        enable_relative_position: bool = NAIVE_ENABLE_RELATIVE_POSITION,
+        y_axis_convention: str = NAIVE_Y_AXIS_CONVENTION,
         filter_mode: str = NAIVE_FILTER_MODE,
         filter_distance: bool = NAIVE_FILTER_DISTANCE,
         filter_center: bool = NAIVE_FILTER_CENTER,
@@ -73,8 +91,23 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
     ):
         self.model_path = model_path
         self.conf_threshold = conf_threshold
-        self.fx = fx
+        self.fx = float(fx)
+        self.fy = float(fy)
+        self.cx = float(cx)
+        self.cy = float(cy)
         self.real_width_m = real_width_m
+        self.intrinsics_source = intrinsics_source.strip().lower()
+        self.camera_matrix_path = camera_matrix_path
+        self.intrinsics_fallback_to_manual = bool(intrinsics_fallback_to_manual)
+        self.enable_relative_position = bool(enable_relative_position)
+        self.y_axis_convention = y_axis_convention.strip().lower()
+        if self.y_axis_convention not in {"up", "down"}:
+            raise ValueError(
+                f"Unsupported y-axis convention '{y_axis_convention}'. Use 'up' or 'down'."
+            )
+        self.intrinsics_loaded_from = "manual"
+        self._configure_intrinsics()
+
         self.filter_mode = filter_mode.strip().lower()
         if self.filter_mode not in {"none", "ema", "kalman"}:
             raise ValueError(
@@ -120,6 +153,31 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         self._last_estimate_metrics: dict[str, float] | None = None
         self._model: YOLO | None = None
 
+    def _configure_intrinsics(self) -> None:
+        if self.intrinsics_source == "manual":
+            self.intrinsics_loaded_from = "manual"
+            return
+
+        if self.intrinsics_source != "calibration_npy":
+            raise ValueError(
+                f"Unsupported intrinsics source '{self.intrinsics_source}'. "
+                "Use one of: manual, calibration_npy."
+            )
+
+        try:
+            values = load_intrinsics_from_camera_matrix(self.camera_matrix_path)
+        except Exception:
+            if not self.intrinsics_fallback_to_manual:
+                raise
+            self.intrinsics_loaded_from = "manual_fallback"
+            return
+
+        self.fx = float(values["fx"])
+        self.fy = float(values["fy"])
+        self.cx = float(values["cx"])
+        self.cy = float(values["cy"])
+        self.intrinsics_loaded_from = "calibration_npy"
+
     def _get_model(self) -> YOLO:
         if self._model is None:
             model_abs = resolve_repo_path(self.model_path)
@@ -160,7 +218,21 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             )
             print(f"  raw distance     = {float(metrics['raw_distance_m']):.3f} m")
             print(f"  filt distance    = {float(metrics['distance_m']):.3f} m")
+            if self.enable_relative_position and metrics.get("x_rel_m") is not None:
+                print(
+                    "  rel xyz (m)      = "
+                    f"({float(metrics['x_rel_m']):.3f}, {float(metrics['y_rel_m']):.3f}, {float(metrics['z_rel_m']):.3f})"
+                )
+                print(
+                    "  yaw error        = "
+                    f"{float(metrics['yaw_error_rad']):.3f} rad ({float(metrics['yaw_error_deg']):.1f} deg)"
+                )
         print(f"  inference ms     = {float(metrics['infer_ms']):.2f}")
+        print(
+            "  intrinsics       = "
+            f"fx={self.fx:.3f}, fy={self.fy:.3f}, cx={self.cx:.3f}, cy={self.cy:.3f} "
+            f"[{self.intrinsics_loaded_from}]"
+        )
         print(f"  track state      = {metrics.get('track_state', 'unknown')}")
         print(f"Saved annotated image to: {output_path}")
 
@@ -242,6 +314,28 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         filtered_center_x = self._center_x_filter.update(raw_center_x)
         filtered_center_y = self._center_y_filter.update(raw_center_y)
 
+        rel = None
+        raw_rel = None
+        if self.enable_relative_position:
+            raw_rel = estimate_relative_position_from_center(
+                center_px=(raw_center_x, raw_center_y),
+                z_m=raw_distance,
+                fx=self.fx,
+                fy=self.fy,
+                cx=self.cx,
+                cy=self.cy,
+                y_axis_convention=self.y_axis_convention,
+            )
+            rel = estimate_relative_position_from_center(
+                center_px=(filtered_center_x, filtered_center_y),
+                z_m=float(filtered_distance),
+                fx=self.fx,
+                fy=self.fy,
+                cx=self.cx,
+                cy=self.cy,
+                y_axis_convention=self.y_axis_convention,
+            )
+
         self._missed_frames = 0
         metrics = {
             "confidence": float(raw["confidence"]),
@@ -260,6 +354,21 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             "is_stale": 0,
             "filter_mode": self.filter_mode,
         }
+        if rel is not None and raw_rel is not None:
+            metrics.update(
+                {
+                    "raw_x_rel_m": round(float(raw_rel["x_rel_m"]), 4),
+                    "raw_y_rel_m": round(float(raw_rel["y_rel_m"]), 4),
+                    "raw_z_rel_m": round(float(raw_rel["z_rel_m"]), 4),
+                    "raw_yaw_error_rad": round(float(raw_rel["yaw_error_rad"]), 4),
+                    "raw_yaw_error_deg": round(float(raw_rel["yaw_error_deg"]), 2),
+                    "x_rel_m": round(float(rel["x_rel_m"]), 4),
+                    "y_rel_m": round(float(rel["y_rel_m"]), 4),
+                    "z_rel_m": round(float(rel["z_rel_m"]), 4),
+                    "yaw_error_rad": round(float(rel["yaw_error_rad"]), 4),
+                    "yaw_error_deg": round(float(rel["yaw_error_deg"]), 2),
+                }
+            )
         self._last_estimate_metrics = metrics
         return metrics
 
@@ -310,30 +419,6 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         raw_cy = int(float(metrics["raw_bbox_center_y_px"]))
 
         cv2.rectangle(frame_bgr, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        label = f"Dist: {float(metrics['distance_m']):.3f} m | Conf: {float(metrics['confidence']):.2f}"
-        cv2.putText(
-            frame_bgr,
-            label,
-            (x1, max(y1 - 10, 20)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (0, 255, 0),
-            2,
-        )
-
-        if self.filter_mode != "none" and (
-            self.filter_distance or self.filter_width
-        ):
-            raw_label = f"Raw dist: {float(metrics['raw_distance_m']):.3f} m"
-            cv2.putText(
-                frame_bgr,
-                raw_label,
-                (x1, max(y1 - 34, 20)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.55,
-                (0, 255, 255),
-                2,
-            )
 
         cv2.circle(frame_bgr, (cx, cy), 4, (0, 0, 255), -1)
         if self.filter_mode != "none" and self.filter_center:
@@ -361,6 +446,32 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             2,
         )
 
+    def _draw_relative_overlay(self, frame_bgr, metrics: dict[str, float | int | str]) -> None:
+        if not self.enable_relative_position:
+            return
+        if metrics.get("x_rel_m") is None:
+            return
+
+        lines = [
+            f"X: {float(metrics['x_rel_m']):.3f} m",
+            f"Y: {float(metrics['y_rel_m']):.3f} m",
+            f"Z: {float(metrics['z_rel_m']):.3f} m",
+            f"Yaw err: {float(metrics['yaw_error_deg']):.1f} deg",
+        ]
+        x = 16
+        line_h = 24
+        y0 = max(20, int(frame_bgr.shape[0]) - (len(lines) * line_h) - 20)
+        for i, line in enumerate(lines):
+            cv2.putText(
+                frame_bgr,
+                line,
+                (x, y0 + i * line_h),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.62,
+                (255, 255, 255),
+                2,
+            )
+
     def process_live_frame(self, frame_bgr) -> LiveFrameOutput:
         display_frame = frame_bgr.copy()
 
@@ -372,12 +483,14 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         if best is None:
             metrics.update(self._missing_detection_metrics())
             self._annotate_missing_detection(display_frame, metrics)
+            self._draw_relative_overlay(display_frame, metrics)
             return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
 
         xyxy, conf = best
         raw = self._raw_measurement_from_detection(xyxy, conf)
         metrics.update(self._filtered_measurement_from_raw(raw))
         self._annotate_best_detection(display_frame, xyxy, metrics)
+        self._draw_relative_overlay(display_frame, metrics)
         return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
 
     def run_live(

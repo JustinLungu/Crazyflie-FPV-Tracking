@@ -13,11 +13,33 @@ MODEL_PATH = "runs/models/backup/weights/best.pt"
 # Non-live outputs are grouped under output/.
 OUTPUT_DIR = "depth_estimation/output/naive_bbox"
 
-# Calibrated intrinsics (pixels).
+# Manual intrinsics fallback (pixels).
 FX = 218.867
+FY = 217.141
+CX = 322.385
+CY = 236.242
+
+# Intrinsics source:
+# - "calibration_npy": load from camera calibration matrix file
+# - "manual": use FX/FY/CX/CY above
+NAIVE_INTRINSICS_SOURCE = "calibration_npy"
+NAIVE_CAMERA_MATRIX_PATH = "depth_estimation/camera_calibration/calibration_images/camera_matrix.npy"
+NAIVE_INTRINSICS_FALLBACK_TO_MANUAL = True
 
 # Crazyflie physical width in meters.
 DRONE_WIDTH_M = 0.1
+
+# Relative camera-frame position output:
+# - x_rel_m: horizontal offset (meters)
+# - y_rel_m: vertical offset (meters)
+# - z_rel_m: forward distance (meters)
+# - yaw_error_rad: horizontal angle offset from optical axis
+NAIVE_ENABLE_RELATIVE_POSITION = True
+
+# y-axis convention for y_rel_m:
+# - "up": positive y_rel_m means target is above optical center
+# - "down": positive y_rel_m means target is below optical center
+NAIVE_Y_AXIS_CONVENTION = "up"
 
 # Camera settings (for --live mode).
 DEVICE = "/dev/video0"

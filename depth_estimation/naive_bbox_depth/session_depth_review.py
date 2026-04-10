@@ -14,13 +14,18 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from depth_estimation.naive_bbox_depth.constants import (
+    CX,
+    CY,
     DRONE_WIDTH_M,
+    FY,
     FX,
     KEY_NEXT,
     KEY_PREV,
     KEY_QUIT,
     KEY_TOGGLE_PLAY,
     MODEL_PATH,
+    NAIVE_CAMERA_MATRIX_PATH,
+    NAIVE_ENABLE_RELATIVE_POSITION,
     NAIVE_REVIEW_ALLOW_IMAGE_EXTS,
     NAIVE_REVIEW_DELAY_S,
     NAIVE_REVIEW_LOG_DIR,
@@ -34,6 +39,9 @@ from depth_estimation.naive_bbox_depth.constants import (
     NAIVE_REVIEW_TEXT_THICKNESS,
     NAIVE_REVIEW_WRITE_LOG,
     NAIVE_REVIEW_WINDOW_NAME,
+    NAIVE_INTRINSICS_FALLBACK_TO_MANUAL,
+    NAIVE_INTRINSICS_SOURCE,
+    NAIVE_Y_AXIS_CONVENTION,
     YOLO_CONF_THRESHOLD,
 )
 from depth_estimation.naive_bbox_depth.pipeline import NaiveBBoxDepthPipeline
@@ -87,10 +95,60 @@ def parse_args() -> argparse.Namespace:
         help="Camera focal length in pixels.",
     )
     parser.add_argument(
+        "--fy",
+        type=float,
+        default=FY,
+        help="Camera focal length in y (pixels).",
+    )
+    parser.add_argument(
+        "--cx",
+        type=float,
+        default=CX,
+        help="Principal point x (pixels).",
+    )
+    parser.add_argument(
+        "--cy",
+        type=float,
+        default=CY,
+        help="Principal point y (pixels).",
+    )
+    parser.add_argument(
         "--real-width-m",
         type=float,
         default=DRONE_WIDTH_M,
         help="Real drone width in meters.",
+    )
+    parser.add_argument(
+        "--intrinsics-source",
+        type=str,
+        default=NAIVE_INTRINSICS_SOURCE,
+        choices=("manual", "calibration_npy"),
+        help="Intrinsics source selection.",
+    )
+    parser.add_argument(
+        "--camera-matrix-path",
+        type=str,
+        default=NAIVE_CAMERA_MATRIX_PATH,
+        help="Path to camera_matrix.npy when using calibration_npy source.",
+    )
+    parser.add_argument(
+        "--intrinsics-fallback-to-manual",
+        action=argparse.BooleanOptionalAction,
+        default=NAIVE_INTRINSICS_FALLBACK_TO_MANUAL,
+        help="Fallback to manual intrinsics if calibration file is unavailable.",
+    )
+    parser.add_argument(
+        "--enable-relative-position",
+        action=argparse.BooleanOptionalAction,
+        default=NAIVE_ENABLE_RELATIVE_POSITION,
+        help="Compute x/y/z relative position and yaw error.",
+    )
+    parser.add_argument(
+        "--y-axis-convention",
+        type=str,
+        default=NAIVE_Y_AXIS_CONVENTION,
+        choices=("up", "down"),
+        help="Sign convention for y relative coordinate.",
     )
     parser.add_argument(
         "--write-log",
@@ -164,6 +222,16 @@ def open_metrics_logger(session_dir: Path, log_dir: str):
             "bbox_center_y_px",
             "raw_distance_m",
             "distance_m",
+            "raw_x_rel_m",
+            "raw_y_rel_m",
+            "raw_z_rel_m",
+            "x_rel_m",
+            "y_rel_m",
+            "z_rel_m",
+            "raw_yaw_error_rad",
+            "raw_yaw_error_deg",
+            "yaw_error_rad",
+            "yaw_error_deg",
         ],
     )
     writer.writeheader()
@@ -198,6 +266,16 @@ def write_metrics_row(
             "bbox_center_y_px": metrics.get("bbox_center_y_px", ""),
             "raw_distance_m": metrics.get("raw_distance_m", ""),
             "distance_m": metrics.get("distance_m", ""),
+            "raw_x_rel_m": metrics.get("raw_x_rel_m", ""),
+            "raw_y_rel_m": metrics.get("raw_y_rel_m", ""),
+            "raw_z_rel_m": metrics.get("raw_z_rel_m", ""),
+            "x_rel_m": metrics.get("x_rel_m", ""),
+            "y_rel_m": metrics.get("y_rel_m", ""),
+            "z_rel_m": metrics.get("z_rel_m", ""),
+            "raw_yaw_error_rad": metrics.get("raw_yaw_error_rad", ""),
+            "raw_yaw_error_deg": metrics.get("raw_yaw_error_deg", ""),
+            "yaw_error_rad": metrics.get("yaw_error_rad", ""),
+            "yaw_error_deg": metrics.get("yaw_error_deg", ""),
         }
     )
     log_file.flush()
@@ -219,32 +297,15 @@ def draw_session_overlay(
     track_state = str(metrics.get("track_state", "unknown"))
     detection_count = int(metrics.get("detection_count", 0))
     infer_ms = float(metrics.get("infer_ms", 0.0))
-    distance_m = metrics.get("distance_m")
-    raw_distance_m = metrics.get("raw_distance_m")
-    confidence = metrics.get("confidence")
     bbox_width_px = metrics.get("bbox_width_px")
-    raw_bbox_width_px = metrics.get("raw_bbox_width_px")
-
-    depth_text = "dist: n/a"
-    if distance_m is not None:
-        depth_text = f"dist: {float(distance_m):.3f} m"
-    if raw_distance_m is not None:
-        depth_text = f"{depth_text} (raw {float(raw_distance_m):.3f})"
-
-    conf_text = "conf: n/a"
-    if confidence is not None:
-        conf_text = f"conf: {float(confidence):.3f}"
 
     bbox_text = "bbox_w: n/a"
     if bbox_width_px is not None:
         bbox_text = f"bbox_w: {float(bbox_width_px):.1f}px"
-    if raw_bbox_width_px is not None:
-        bbox_text = f"{bbox_text} (raw {float(raw_bbox_width_px):.1f})"
 
     lines = [
         f"{status}  frame {index + 1}/{total}  detections: {detection_count}  state: {track_state}",
-        f"inference: {infer_ms:.1f} ms  delay: {delay_s:.2f}s",
-        f"{depth_text}  {conf_text}  {bbox_text}",
+        f"inference: {infer_ms:.1f} ms  delay: {delay_s:.2f}s  {bbox_text}",
         f"session: {session_name}",
         f"image: {image_name}",
     ]
@@ -307,7 +368,15 @@ def main() -> None:
         model_path=args.model_path,
         conf_threshold=float(args.conf_threshold),
         fx=float(args.fx),
+        fy=float(args.fy),
+        cx=float(args.cx),
+        cy=float(args.cy),
         real_width_m=float(args.real_width_m),
+        intrinsics_source=str(args.intrinsics_source),
+        camera_matrix_path=str(args.camera_matrix_path),
+        intrinsics_fallback_to_manual=bool(args.intrinsics_fallback_to_manual),
+        enable_relative_position=bool(args.enable_relative_position),
+        y_axis_convention=str(args.y_axis_convention),
     )
 
     session_dir = resolve_review_session_dir(args.session)
@@ -323,7 +392,15 @@ def main() -> None:
     print(f"Review session: {session_dir}")
     print(f"Images: {len(image_paths)}")
     print(f"Model: {args.model_path}")
-    print(f"fx={float(args.fx):.3f}, real_width_m={float(args.real_width_m):.4f}")
+    print(
+        "intrinsics="
+        f"fx={pipeline.fx:.3f}, fy={pipeline.fy:.3f}, cx={pipeline.cx:.3f}, cy={pipeline.cy:.3f} "
+        f"[{pipeline.intrinsics_loaded_from}]"
+    )
+    print(
+        f"relative_position={pipeline.enable_relative_position}, y_axis={pipeline.y_axis_convention}, "
+        f"real_width_m={float(args.real_width_m):.4f}"
+    )
     print(
         "filter mode="
         f"{pipeline.filter_mode}, dist={pipeline.filter_distance}, center={pipeline.filter_center}, width={pipeline.filter_width}"
