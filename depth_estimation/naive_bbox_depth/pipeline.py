@@ -423,6 +423,17 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         infer_ms = (time.perf_counter() - t0) * 1000.0
         return results, infer_ms
 
+    def _attach_runtime_metrics(
+        self,
+        metrics: dict[str, float | int | str],
+        process_t0: float,
+    ) -> None:
+        process_ms = (time.perf_counter() - process_t0) * 1000.0
+        metrics["process_ms"] = round(process_ms, 2)
+        metrics["process_fps"] = round(1000.0 / process_ms, 2) if process_ms > 0.0 else 0.0
+        infer_ms = float(metrics.get("infer_ms", 0.0))
+        metrics["infer_fps"] = round(1000.0 / infer_ms, 2) if infer_ms > 0.0 else 0.0
+
     def _raw_measurement_from_detection(self, xyxy, conf: float) -> dict[str, float]:
         estimate = estimate_distance_from_bbox(
             bbox_xyxy=xyxy,
@@ -737,6 +748,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             )
 
     def process_live_frame(self, frame_bgr) -> LiveFrameOutput:
+        process_t0 = time.perf_counter()
         display_frame = frame_bgr.copy()
 
         results, infer_ms = self._predict(frame_bgr)
@@ -759,6 +771,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             metrics["gating_reasons"] = "no_detection"
             self._annotate_missing_detection(display_frame, metrics)
             self._draw_relative_overlay(display_frame, metrics)
+            self._attach_runtime_metrics(metrics, process_t0)
             return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
 
         # Fast path: gating disabled -> use top-confidence candidate only.
@@ -775,6 +788,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             metrics["gating_reasons"] = "disabled"
             self._annotate_best_detection(display_frame, xyxy, metrics)
             self._draw_relative_overlay(display_frame, metrics)
+            self._attach_runtime_metrics(metrics, process_t0)
             return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
 
         rejected: list[tuple[int, object, dict[str, float], list[str], dict[str, float] | None]] = []
@@ -792,6 +806,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
                 metrics["gating_reasons"] = ""
                 self._annotate_best_detection(display_frame, xyxy, metrics)
                 self._draw_relative_overlay(display_frame, metrics)
+                self._attach_runtime_metrics(metrics, process_t0)
                 return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
             rejected.append((rank, xyxy, raw, gate_reasons, raw_rel))
 
@@ -833,6 +848,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         self._annotate_rejected_detection(display_frame, best_xyxy, best_reasons, raw=best_raw)
         self._annotate_missing_detection(display_frame, metrics)
         self._draw_relative_overlay(display_frame, metrics)
+        self._attach_runtime_metrics(metrics, process_t0)
         return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
 
     def run_live(

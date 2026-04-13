@@ -96,6 +96,9 @@ def open_metrics_logger(session_dir: Path, log_dir: str):
             "image_name",
             "processed_at_iso",
             "infer_ms",
+            "infer_fps",
+            "process_ms",
+            "process_fps",
             "track_state",
             "frames_since_detection",
             "estimate_source",
@@ -143,6 +146,9 @@ def write_metrics_row(
             "image_name": image_name,
             "processed_at_iso": datetime.now().isoformat(timespec="milliseconds"),
             "infer_ms": metrics.get("infer_ms", ""),
+            "infer_fps": metrics.get("infer_fps", ""),
+            "process_ms": metrics.get("process_ms", ""),
+            "process_fps": metrics.get("process_fps", ""),
             "track_state": metrics.get("track_state", ""),
             "frames_since_detection": metrics.get("frames_since_detection", ""),
             "estimate_source": metrics.get("estimate_source", ""),
@@ -207,7 +213,11 @@ def compose_review_display(
     detection_count = int(metrics.get("detection_count", 0))
 
     infer_ms = _as_float(metrics.get("infer_ms"))
+    process_fps = _as_float(metrics.get("process_fps"))
     # Dist/conf are shown near bbox on the video frame; keep panel for state/position.
+    conf = _as_float(metrics.get("confidence"))
+    raw_dist = _as_float(metrics.get("raw_distance_m"))
+    filt_dist = _as_float(metrics.get("distance_m"))
     x_rel = _as_float(metrics.get("x_rel_m"))
     y_rel = _as_float(metrics.get("y_rel_m"))
     z_rel = _as_float(metrics.get("z_rel_m"))
@@ -235,7 +245,11 @@ def compose_review_display(
         x, y = NAIVE_REVIEW_TEXT_ORIGIN
         lines = [
             f"{status} frame {index + 1}/{total} det: {detection_count} state: {track_state}",
-            f"infer: {_format_value(infer_ms, 1, ' ms')} delay: {delay_s:.2f}s gate: {gating_label}",
+            (
+                f"infer: {_format_value(infer_ms, 1, ' ms')} "
+                f"fps(no delay): {_format_value(process_fps, 1)} "
+                f"delay: {delay_s:.2f}s gate: {gating_label}"
+            ),
             (
                 f"conf: {_format_value(conf, 2)} "
                 f"raw/filt dist: {_format_value(raw_dist, 3)}/{_format_value(filt_dist, 3)} m"
@@ -277,6 +291,7 @@ def compose_review_display(
         (f"Estimate src: {estimate_source}", text_color, 0.56),
         (f"Detections: {detection_count}", text_color, 0.56),
         (f"Inference: {_format_value(infer_ms, 1, ' ms')}", text_color, 0.56),
+        (f"FPS (no delay): {_format_value(process_fps, 1)}", text_color, 0.56),
         (f"Delay: {delay_s:.2f} s", text_color, 0.56),
         ("", text_color, 0.56),
         (
