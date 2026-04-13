@@ -3,6 +3,11 @@ DEFAULT_IMAGE_STEM = "frame_009096"
 DRONE_NAME = "brushless_drone"
 IMAGE_PATH = "data/labels/" + DRONE_NAME + "/" + DRONE_NAME + "_yolo/images/train/" + DEFAULT_IMAGE_STEM + ".jpg"
 
+# Entry mode for bbox_dist_estimator.py:
+# - "image": run single-image inference using IMAGE_PATH
+# - "live": run live camera inference
+NAIVE_RUN_MODE = "image"
+
 YOLO_CONF_THRESHOLD = 0.5
 
 # Trained brushless model weights.
@@ -35,13 +40,14 @@ DRONE_WIDTH_M = 0.1
 # - z_rel_m: forward distance (meters)
 # - yaw_error_rad: horizontal angle offset from optical axis
 NAIVE_ENABLE_RELATIVE_POSITION = True
+NAIVE_SHOW_RELATIVE_OVERLAY_ON_FRAME = False
 
 # y-axis convention for y_rel_m:
 # - "up": positive y_rel_m means target is above optical center
 # - "down": positive y_rel_m means target is below optical center
 NAIVE_Y_AXIS_CONVENTION = "up"
 
-# Camera settings (for --live mode).
+# Camera settings (for live mode).
 DEVICE = "/dev/video0"
 WIDTH, HEIGHT = 640, 480
 FPS_HINT = 30
@@ -87,6 +93,41 @@ NAIVE_DROPOUT_HOLD_FRAMES = 3
 NAIVE_DROPOUT_STALE_FRAMES = 8
 NAIVE_RESET_FILTER_ON_LOST = True
 
+########################################## Gating / Sanity Checks ###########################################
+
+# Debug safety layer around YOLO->depth measurements.
+# Can be toggled at runtime with KEY_TOGGLE_GATING in live/review windows.
+NAIVE_GATING_ENABLED = False
+
+# Only consider the top-K detections by confidence each frame.
+# - 1 => only highest-confidence detection
+# - 2 => consider top-2, etc.
+NAIVE_GATING_MAX_CANDIDATES = 1
+
+
+# Which checks to apply when gating is enabled.
+NAIVE_GATING_CHECK_CONFIDENCE = True
+NAIVE_GATING_CHECK_MIN_WIDTH = True
+NAIVE_GATING_CHECK_MAX_DISTANCE = True
+NAIVE_GATING_CHECK_BORDER = True
+NAIVE_GATING_CHECK_DISTANCE_JUMP = True
+NAIVE_GATING_CHECK_X_JUMP = False
+NAIVE_GATING_CHECK_Y_JUMP = False
+
+
+
+# Thresholds (starting points; tune per setup/session).
+NAIVE_GATING_MIN_CONF_FOR_CONTROL = 0.60
+NAIVE_GATING_MIN_BBOX_WIDTH_PX = 8.0
+NAIVE_GATING_MAX_VALID_DISTANCE_M = 2.0
+NAIVE_GATING_BORDER_MARGIN_PX = 5
+NAIVE_GATING_MAX_DISTANCE_JUMP_M = 0.30
+NAIVE_GATING_MAX_X_JUMP_M = 0.50
+NAIVE_GATING_MAX_Y_JUMP_M = 0.50
+
+# Draw rejected-detection reason overlay on frame.
+NAIVE_GATING_SHOW_REJECTION_OVERLAY = True
+
 
 ####################### Session Review Constants (recorded test session playback) ########################################
 
@@ -107,8 +148,16 @@ NAIVE_REVIEW_TEXT_COLOR = (0, 255, 0)
 NAIVE_REVIEW_TEXT_SCALE = 0.7
 NAIVE_REVIEW_TEXT_THICKNESS = 2
 
+# Optional right-side telemetry panel (cleaner than text over video).
+NAIVE_REVIEW_USE_SIDE_PANEL = True
+NAIVE_REVIEW_SIDE_PANEL_WIDTH = 420
+NAIVE_REVIEW_SIDE_PANEL_BG_COLOR = (22, 22, 22)
+NAIVE_REVIEW_SIDE_PANEL_TEXT_COLOR = (230, 230, 230)
+NAIVE_REVIEW_SIDE_PANEL_ACCENT_COLOR = (120, 220, 120)
+
 # Keyboard controls.
 KEY_QUIT = {ord("q"), 27}  # q or ESC
 KEY_TOGGLE_PLAY = {ord(" ")}
 KEY_PREV = {ord("a"), 2424832, 65361}
 KEY_NEXT = {ord("d"), 2555904, 65363}
+KEY_TOGGLE_GATING = {ord("g"), ord("G")}

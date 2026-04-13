@@ -25,8 +25,9 @@ A minimal depth baseline based on bounding-box width.
   - intrinsics source switching: `NAIVE_INTRINSICS_SOURCE`, `NAIVE_CAMERA_MATRIX_PATH`
   - `DRONE_WIDTH_M`: assumed real drone width
   - `OUTPUT_DIR`: non-live save path
-  - camera settings for `--live`
+  - camera settings for live mode
   - relative-position settings: `NAIVE_ENABLE_RELATIVE_POSITION`, `NAIVE_Y_AXIS_CONVENTION`
+  - frame overlay toggle: `NAIVE_SHOW_RELATIVE_OVERLAY_ON_FRAME`
   - session-review settings for playback (`NAIVE_REVIEW_*`)
 
 ## Outputs
@@ -62,15 +63,38 @@ Suggested progression:
 3. Version 3: tune dropout hold/stale thresholds.
 4. Version 4: switch `NAIVE_FILTER_MODE="kalman"` if EMA is not enough.
 
+## Gating (Debug Safety Layer)
+
+Gating adds sanity checks before a detection is trusted by the temporal state.
+
+- master switch: `NAIVE_GATING_ENABLED`
+- checks: `NAIVE_GATING_CHECK_*`
+- thresholds: `NAIVE_GATING_MIN_*`, `NAIVE_GATING_MAX_*`, `NAIVE_GATING_BORDER_MARGIN_PX`
+- debug overlay: `NAIVE_GATING_SHOW_REJECTION_OVERLAY`
+
+Per-frame metrics now include:
+
+- `gating_enabled`
+- `gating_passed` (`1` pass, `0` reject, `-1` not evaluated/no detection)
+- `gating_reasons`
+
+Runtime toggle:
+
+- press `g` in live mode or `session_depth_review.py` to toggle gating ON/OFF.
+- in session review, toggling gating reprocesses the timeline with the new state.
+
 ## Run
 
 From repo root:
 
 ```bash
 ./scripts/naive_bbox_depth.sh
-./scripts/naive_bbox_depth.sh <image_path>
-./scripts/naive_bbox_depth.sh --live
 ./scripts/session_naive_depth_review.sh
-./scripts/session_naive_depth_review.sh --session data/labels/brushless_drone/all_data/test/label_session_YYYYMMDD_HHMMSS
-./scripts/session_naive_depth_review.sh --no-write-log
 ```
+
+Runtime mode and session settings are now configured only in `constants.py`:
+
+- `NAIVE_RUN_MODE` (`image` or `live`)
+- `IMAGE_PATH`
+- `NAIVE_REVIEW_*`
+- `NAIVE_REVIEW_USE_SIDE_PANEL` and `NAIVE_REVIEW_SIDE_PANEL_*` for the right telemetry panel
