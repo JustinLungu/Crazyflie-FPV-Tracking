@@ -10,6 +10,11 @@ Use this README as a quick overview. Detailed setup, constants, and usage live i
   - Main live entrypoint for depth estimation.
   - Select one or multiple methods with `--methods naive`, `--methods unidepth`, `--methods midas`, or combinations like `--methods naive,unidepth`.
   - Launch via `scripts/live_depth.sh`.
+- `live_depth_review.py`
+  - Constants-driven live reviewer with side telemetry panel (session-review style, but real-time camera).
+  - Configure methods/camera/UI in `depth_estimation/constants.py` using `DEPTH_LIVE_REVIEW_METHODS`.
+  - Designed for phased expansion (for example, start with `("naive",)` then move to `("naive", "unidepth")`).
+  - Launch via `scripts/live_depth_review.sh`.
 
 ## Pipelines
 
