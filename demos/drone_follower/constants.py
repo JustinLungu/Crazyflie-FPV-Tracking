@@ -19,7 +19,7 @@ from drone_control.constants import (
 DEMO_DEPTH_METHOD = "naive"
 
 # Mission behavior.
-DEMO_FOLLOW_TARGET_DISTANCE_M = 0.40
+DEMO_FOLLOW_TARGET_DISTANCE_M = 0.20
 DEMO_FOLLOW_TAKEOFF_HEIGHT_M = 0.50
 DEMO_FOLLOW_CONTROL_DT = 0.06 # smaller = faster updates
 # Number of frames to run CV before engaging flight control.
@@ -38,6 +38,14 @@ DEMO_FOLLOW_DISTANCE_DEADBAND_M = 0.08 # error zone where drone "close enough" t
 DEMO_FOLLOW_KP_YAW = 1.80
 DEMO_FOLLOW_MAX_YAWRATE_DEG_S = 60.0
 DEMO_FOLLOW_YAW_DEADBAND_DEG = 5.0 # error zone where drone "facing close enough" to target (avoid oscillations)
+
+# Vertical-centering control.
+# Uses y_rel_m from depth pipeline; with naive default y-axis convention ("up"),
+# positive y_rel_m means target is above image center -> command positive vz (climb).
+DEMO_FOLLOW_ENABLE_VERTICAL = True
+DEMO_FOLLOW_KP_VERTICAL = 1.00
+DEMO_FOLLOW_MAX_VZ = 0.25
+DEMO_FOLLOW_VERTICAL_DEADBAND_M = 0.05
 
 # Runner safety behavior.
 DEMO_TAKEOVER_ON_ANY_INPUT = True

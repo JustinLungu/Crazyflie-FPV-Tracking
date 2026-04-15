@@ -9,6 +9,7 @@ This demo combines:
 Follow a detected drone while:
 - keeping target distance near `DEMO_FOLLOW_TARGET_DISTANCE_M`
 - keeping target horizontally centered using yaw correction
+- keeping target vertically centered using vz correction (`y_rel_m`)
 - allowing instant teleop takeover at any time
 
 ## Run
@@ -30,6 +31,7 @@ Main knobs:
 - `DEMO_FOLLOW_ONLY_ON_MEASUREMENT`: only move on fresh detections; otherwise hover/wait
 - `DEMO_FOLLOW_KP_FORWARD`, `DEMO_FOLLOW_MAX_VX`: forward/back distance control
 - `DEMO_FOLLOW_KP_YAW`, `DEMO_FOLLOW_MAX_YAWRATE_DEG_S`: centering yaw control
+- `DEMO_FOLLOW_ENABLE_VERTICAL`, `DEMO_FOLLOW_KP_VERTICAL`, `DEMO_FOLLOW_MAX_VZ`: vertical centering control
 - `DEMO_TAKEOVER_ON_ANY_INPUT`: immediate safety takeover on joystick input
 - `DEMO_LAND_AFTER_MISSION_IF_NO_TAKEOVER`: post-mission landing behavior
 

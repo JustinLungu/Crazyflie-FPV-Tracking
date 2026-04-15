@@ -14,14 +14,18 @@ from demos.drone_follower.constants import (
     DEMO_CAMERA_WIDTH,
     DEMO_FOLLOW_CONTROL_DT,
     DEMO_FOLLOW_DISTANCE_DEADBAND_M,
+    DEMO_FOLLOW_ENABLE_VERTICAL,
     DEMO_FOLLOW_KP_FORWARD,
     DEMO_FOLLOW_KP_YAW,
+    DEMO_FOLLOW_KP_VERTICAL,
     DEMO_FOLLOW_MAX_VX,
+    DEMO_FOLLOW_MAX_VZ,
     DEMO_FOLLOW_ONLY_ON_MEASUREMENT,
     DEMO_PRECONTROL_CV_WARMUP_FRAMES,
     DEMO_FOLLOW_MAX_YAWRATE_DEG_S,
     DEMO_FOLLOW_TAKEOFF_HEIGHT_M,
     DEMO_FOLLOW_TARGET_DISTANCE_M,
+    DEMO_FOLLOW_VERTICAL_DEADBAND_M,
     DEMO_FOLLOW_YAW_DEADBAND_DEG,
     DEMO_MISSION_COMPLETE_ON_PREVIEW_QUIT,
     DEMO_PREVIEW_WINDOW_NAME,
@@ -50,7 +54,8 @@ class DroneFollowerMission(AutonomousMission):
     Mission loop:
     - reads live camera frames
     - runs selected live depth tracking pipeline
-    - commands forward velocity + yaw rate to keep target centered and at set distance
+    - commands forward velocity + yaw rate + vertical velocity
+      to keep target centered and at set distance
     - always allows joystick takeover via TakeoverRunner/TakeoverContext
     """
 
@@ -64,6 +69,10 @@ class DroneFollowerMission(AutonomousMission):
         follow_only_on_measurement: bool = DEMO_FOLLOW_ONLY_ON_MEASUREMENT,
         precontrol_cv_warmup_frames: int = DEMO_PRECONTROL_CV_WARMUP_FRAMES,
         distance_deadband_m: float = DEMO_FOLLOW_DISTANCE_DEADBAND_M,
+        enable_vertical: bool = DEMO_FOLLOW_ENABLE_VERTICAL,
+        kp_vertical: float = DEMO_FOLLOW_KP_VERTICAL,
+        max_vz: float = DEMO_FOLLOW_MAX_VZ,
+        vertical_deadband_m: float = DEMO_FOLLOW_VERTICAL_DEADBAND_M,
         kp_yaw: float = DEMO_FOLLOW_KP_YAW,
         max_yawrate_deg_s: float = DEMO_FOLLOW_MAX_YAWRATE_DEG_S,
         yaw_deadband_deg: float = DEMO_FOLLOW_YAW_DEADBAND_DEG,
@@ -80,6 +89,10 @@ class DroneFollowerMission(AutonomousMission):
         self.follow_only_on_measurement = bool(follow_only_on_measurement)
         self.precontrol_cv_warmup_frames = max(1, int(precontrol_cv_warmup_frames))
         self.distance_deadband_m = float(distance_deadband_m)
+        self.enable_vertical = bool(enable_vertical)
+        self.kp_vertical = float(kp_vertical)
+        self.max_vz = float(max_vz)
+        self.vertical_deadband_m = float(vertical_deadband_m)
 
         self.kp_yaw = float(kp_yaw)
         self.max_yawrate_deg_s = float(max_yawrate_deg_s)
@@ -110,7 +123,7 @@ class DroneFollowerMission(AutonomousMission):
                 raise RuntimeError(f"Could not open camera at {DEMO_CAMERA_DEVICE}")
         return cap
 
-    def _compute_command(self, metrics: dict) -> tuple[float, float, str]:
+    def _compute_command(self, metrics: dict) -> tuple[float, float, float, str]:
         track_state = str(metrics.get("track_state", "lost")).lower()
         estimate_source = str(metrics.get("estimate_source", "none")).lower()
 
@@ -120,19 +133,22 @@ class DroneFollowerMission(AutonomousMission):
             except (TypeError, ValueError):
                 detection_count = 0
             if track_state != "tracked":
-                return 0.0, 0.0, f"wait_{track_state}"
+                return 0.0, 0.0, 0.0, f"wait_{track_state}"
             if estimate_source != "measurement":
-                return 0.0, 0.0, f"wait_src_{estimate_source}"
+                return 0.0, 0.0, 0.0, f"wait_src_{estimate_source}"
             if detection_count <= 0:
-                return 0.0, 0.0, "wait_no_detection"
+                return 0.0, 0.0, 0.0, "wait_no_detection"
 
         if track_state != "tracked":
-            return 0.0, 0.0, f"{track_state}_hold"
+            return 0.0, 0.0, 0.0, f"{track_state}_hold"
 
         z_rel = _as_float(metrics.get("z_rel_m"))
+        y_rel = _as_float(metrics.get("y_rel_m"))
         yaw_err_deg = _as_float(metrics.get("yaw_error_deg"))
         if z_rel is None or yaw_err_deg is None:
-            return 0.0, 0.0, "missing_pose"
+            return 0.0, 0.0, 0.0, "missing_pose"
+        if self.enable_vertical and y_rel is None:
+            return 0.0, 0.0, 0.0, "missing_vertical_pose"
 
         dist_err = z_rel - self.target_distance_m
         vx = self.kp_forward * dist_err
@@ -140,13 +156,26 @@ class DroneFollowerMission(AutonomousMission):
             vx = 0.0
         vx = self._clamp(vx, -self.max_vx, self.max_vx)
 
+        vz = 0.0
+        if self.enable_vertical and y_rel is not None:
+            vz = self.kp_vertical * y_rel
+            if abs(y_rel) < self.vertical_deadband_m:
+                vz = 0.0
+            vz = self._clamp(vz, -self.max_vz, self.max_vz)
+
         yawrate = self.kp_yaw * yaw_err_deg
         if abs(yaw_err_deg) < self.yaw_deadband_deg:
             yawrate = 0.0
         yawrate = self._clamp(yawrate, -self.max_yawrate_deg_s, self.max_yawrate_deg_s)
 
-        reason = f"tracked z={z_rel:.2f}m target={self.target_distance_m:.2f}m yaw={yaw_err_deg:.1f}deg"
-        return vx, yawrate, reason
+        if self.enable_vertical and y_rel is not None:
+            reason = (
+                f"tracked z={z_rel:.2f}m target={self.target_distance_m:.2f}m "
+                f"y={y_rel:.2f}m yaw={yaw_err_deg:.1f}deg"
+            )
+        else:
+            reason = f"tracked z={z_rel:.2f}m target={self.target_distance_m:.2f}m yaw={yaw_err_deg:.1f}deg"
+        return vx, vz, yawrate, reason
 
     def _update_last_pose(self, output: LiveFrameOutput) -> None:
         m = output.metrics
@@ -268,8 +297,8 @@ class DroneFollowerMission(AutonomousMission):
                 output = pipeline.process_live_frame(frame_bgr)
                 metrics = output.metrics
 
-                vx_cmd, yawrate_cmd, reason = self._compute_command(metrics)
-                if ctx.command(vx=vx_cmd, vy=0.0, vz=0.0, yawrate=yawrate_cmd, duration_s=self.dt):
+                vx_cmd, vz_cmd, yawrate_cmd, reason = self._compute_command(metrics)
+                if ctx.command(vx=vx_cmd, vy=0.0, vz=vz_cmd, yawrate=yawrate_cmd, duration_s=self.dt):
                     return False
 
                 if self.show_preview:
