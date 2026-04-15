@@ -18,19 +18,22 @@ from drone_control.constants import (
 DEMO_DEPTH_METHOD = "naive"
 
 # Mission behavior.
-DEMO_FOLLOW_TARGET_DISTANCE_M = 0.80
+DEMO_FOLLOW_TARGET_DISTANCE_M = 0.40
 DEMO_FOLLOW_TAKEOFF_HEIGHT_M = 0.50
-DEMO_FOLLOW_CONTROL_DT = 0.06
+DEMO_FOLLOW_CONTROL_DT = 0.06 # smaller = faster updates
+# If True, follower sends motion only on fresh accepted detections
+# (track_state=tracked + estimate_source=measurement).
+DEMO_FOLLOW_ONLY_ON_MEASUREMENT = True
 
 # Forward-distance control.
 DEMO_FOLLOW_KP_FORWARD = 0.90
 DEMO_FOLLOW_MAX_VX = 0.35
-DEMO_FOLLOW_DISTANCE_DEADBAND_M = 0.08
+DEMO_FOLLOW_DISTANCE_DEADBAND_M = 0.08 # error zone where drone "close enough" to target distance (avoid oscillations)
 
 # Yaw-centering control.
 DEMO_FOLLOW_KP_YAW = 1.80
 DEMO_FOLLOW_MAX_YAWRATE_DEG_S = 60.0
-DEMO_FOLLOW_YAW_DEADBAND_DEG = 3.0
+DEMO_FOLLOW_YAW_DEADBAND_DEG = 5.0 # error zone where drone "facing close enough" to target (avoid oscillations)
 
 # Runner safety behavior.
 DEMO_TAKEOVER_ON_ANY_INPUT = True

@@ -25,6 +25,7 @@ Edit:
 Main knobs:
 - `DEMO_DEPTH_METHOD`: depth backend (`"naive"` now, structure is ready for future methods)
 - `DEMO_FOLLOW_TARGET_DISTANCE_M`: desired follow distance
+- `DEMO_FOLLOW_ONLY_ON_MEASUREMENT`: only move on fresh detections; otherwise hover/wait
 - `DEMO_FOLLOW_KP_FORWARD`, `DEMO_FOLLOW_MAX_VX`: forward/back distance control
 - `DEMO_FOLLOW_KP_YAW`, `DEMO_FOLLOW_MAX_YAWRATE_DEG_S`: centering yaw control
 - `DEMO_TAKEOVER_ON_ANY_INPUT`: immediate safety takeover on joystick input

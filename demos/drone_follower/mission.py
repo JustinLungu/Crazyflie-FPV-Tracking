@@ -16,6 +16,7 @@ from demos.drone_follower.constants import (
     DEMO_FOLLOW_KP_FORWARD,
     DEMO_FOLLOW_KP_YAW,
     DEMO_FOLLOW_MAX_VX,
+    DEMO_FOLLOW_ONLY_ON_MEASUREMENT,
     DEMO_FOLLOW_MAX_YAWRATE_DEG_S,
     DEMO_FOLLOW_TAKEOFF_HEIGHT_M,
     DEMO_FOLLOW_TARGET_DISTANCE_M,
@@ -63,6 +64,7 @@ class DroneFollowerMission(AutonomousMission):
         dt: float = DEMO_FOLLOW_CONTROL_DT,
         kp_forward: float = DEMO_FOLLOW_KP_FORWARD,
         max_vx: float = DEMO_FOLLOW_MAX_VX,
+        follow_only_on_measurement: bool = DEMO_FOLLOW_ONLY_ON_MEASUREMENT,
         distance_deadband_m: float = DEMO_FOLLOW_DISTANCE_DEADBAND_M,
         kp_yaw: float = DEMO_FOLLOW_KP_YAW,
         max_yawrate_deg_s: float = DEMO_FOLLOW_MAX_YAWRATE_DEG_S,
@@ -77,6 +79,7 @@ class DroneFollowerMission(AutonomousMission):
 
         self.kp_forward = float(kp_forward)
         self.max_vx = float(max_vx)
+        self.follow_only_on_measurement = bool(follow_only_on_measurement)
         self.distance_deadband_m = float(distance_deadband_m)
 
         self.kp_yaw = float(kp_yaw)
@@ -110,6 +113,20 @@ class DroneFollowerMission(AutonomousMission):
 
     def _compute_command(self, metrics: dict) -> tuple[float, float, str]:
         track_state = str(metrics.get("track_state", "lost")).lower()
+        estimate_source = str(metrics.get("estimate_source", "none")).lower()
+
+        if self.follow_only_on_measurement:
+            try:
+                detection_count = int(metrics.get("detection_count", 0))
+            except (TypeError, ValueError):
+                detection_count = 0
+            if track_state != "tracked":
+                return 0.0, 0.0, f"wait_{track_state}"
+            if estimate_source != "measurement":
+                return 0.0, 0.0, f"wait_src_{estimate_source}"
+            if detection_count <= 0:
+                return 0.0, 0.0, "wait_no_detection"
+
         if track_state != "tracked":
             return 0.0, 0.0, f"{track_state}_hold"
 
