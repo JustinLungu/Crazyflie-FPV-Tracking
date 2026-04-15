@@ -46,7 +46,7 @@ From anywhere:
 - `live_inference.sh`: run real-time YOLO inference on live feed (`inference/live_inference.py`)
 - `session_inference_review.sh`: run YOLO inference review on one configured label session (`inference/session_inference_review.py`)
 - `session_naive_depth_review.sh`: run naive YOLO+bbox-depth review on one session (`depth_estimation/naive_bbox_depth/session_depth_review.py`)
-- `flight_vision.sh`: run drone control + live YOLO in parallel (`flight_vision/main.py`)
+- `flight_vision.sh`: run drone control + live YOLO in parallel (`flight_vision/main.py`, supports `--vision-only` for no-radio checks)
 - `upload_backup.sh`: upload raw/labels backups to Drive (`data/upload_data_drive.py`)
 - `run_tests.sh`: run system/integration test suite (`tests/test_*.py`)
 

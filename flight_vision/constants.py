@@ -29,7 +29,7 @@ FLIGHT_MISSION = DEFAULT_MISSION
 # Switch VISION_CAMERA_DEVICE if receiver appears on another node.
 # Example: "/dev/video0" -> "/dev/video1"
 # Tip: run `ls /dev/video*` to inspect available devices.
-VISION_CAMERA_DEVICE = "/dev/video3"
+VISION_CAMERA_DEVICE = "/dev/video2"
 # Output frame size shown and processed by YOLO.
 # Example:
 # VISION_CAMERA_WIDTH = 640

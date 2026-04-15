@@ -23,6 +23,14 @@ This starts:
 - `DroneControlApp` for flight logic
 - YOLO live detection window using defaults from `inference/constants.py`
 
+For camera/model checks without a Crazyradio dongle:
+
+```bash
+./scripts/flight_vision.sh --vision-only
+```
+
+This runs YOLO live view only and skips Crazyflie connection.
+
 ## Frequently Switched Settings
 
 Edit `flight_vision/constants.py`:
