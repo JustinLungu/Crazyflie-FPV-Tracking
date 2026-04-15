@@ -48,7 +48,7 @@ NAIVE_SHOW_RELATIVE_OVERLAY_ON_FRAME = False
 NAIVE_Y_AXIS_CONVENTION = "up"
 
 # Camera settings (for live mode).
-DEVICE = "/dev/video0"
+DEVICE = "/dev/video2"
 WIDTH, HEIGHT = 640, 480
 FPS_HINT = 30
 FOURCC = "MJPG"

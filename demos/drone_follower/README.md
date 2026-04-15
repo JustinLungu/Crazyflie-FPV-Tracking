@@ -24,6 +24,8 @@ Edit:
 
 Main knobs:
 - `DEMO_DEPTH_METHOD`: depth backend (`"naive"` now, structure is ready for future methods)
+- `DEMO_DRONE_URI`: radio URI for the Crazyflie link (defaults to `flight_vision` URI)
+- `DEMO_PRECONTROL_CV_WARMUP_FRAMES`: run CV preview/model warm-up before flight control engages
 - `DEMO_FOLLOW_TARGET_DISTANCE_M`: desired follow distance
 - `DEMO_FOLLOW_ONLY_ON_MEASUREMENT`: only move on fresh detections; otherwise hover/wait
 - `DEMO_FOLLOW_KP_FORWARD`, `DEMO_FOLLOW_MAX_VX`: forward/back distance control
@@ -36,3 +38,10 @@ Main knobs:
 - `q` or `ESC`: close preview / finish mission
 - `g`: toggle gating (if selected depth method supports gating)
 - any joystick activity: takeover from autonomy to teleop
+
+## Startup Order
+
+This demo starts CV first:
+1. open camera + initialize depth pipeline
+2. show live preview/overlay (same style as `depth_estimation/live_depth_review.py`) and warm up for `DEMO_PRECONTROL_CV_WARMUP_FRAMES`
+3. then engage takeoff + follow control loop

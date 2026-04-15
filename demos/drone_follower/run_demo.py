@@ -10,6 +10,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from demos.drone_follower.constants import (
     DEMO_DEPTH_METHOD,
+    DEMO_DRONE_URI,
     DEMO_FOLLOW_CONTROL_DT,
     DEMO_FOLLOW_TARGET_DISTANCE_M,
     DEMO_FOLLOW_TAKEOFF_HEIGHT_M,
@@ -50,6 +51,7 @@ class DroneFollowerDemoApp:
 
     def _build_teleop(self) -> TeleoperationController:
         return TeleoperationController(
+            uri=DEMO_DRONE_URI,
             tuning={
                 "default_target_z": DEMO_TELEOP_DEFAULT_TARGET_Z,
                 "invert_roll": DEMO_TELEOP_INVERT_ROLL,
@@ -76,6 +78,7 @@ class DroneFollowerDemoApp:
     def run(self) -> None:
         print("Starting drone_follower demo")
         print(f"- depth method: {self.depth_method}")
+        print(f"- drone uri: {DEMO_DRONE_URI}")
         print(f"- target distance: {DEMO_FOLLOW_TARGET_DISTANCE_M:.2f} m")
         print(f"- takeoff height: {DEMO_FOLLOW_TAKEOFF_HEIGHT_M:.2f} m")
         print("- safety takeover: joystick/button activity")
