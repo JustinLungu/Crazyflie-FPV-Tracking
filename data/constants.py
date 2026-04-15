@@ -38,6 +38,16 @@ STARTUP_PROBE_FRAMES = 30  # skip startup frames that are near-black/blank
 # Slow down preview to give operator more reaction time while validating tracking.
 TRACK_REVIEW_DELAY_S = 0.5 # 0.5s ~= 2 frames per second in review mode.
 
+# Optional YOLO-assisted labeling:
+# - Looks for class-matched weights under LABEL_YOLO_BEST_MODELS_DIR.
+# - Toggle at runtime with key 'y'.
+LABEL_YOLO_BEST_MODELS_DIR = "yolo_best_models"
+LABEL_YOLO_ENABLED_AT_START = True
+LABEL_YOLO_CONF_THRESHOLD = 0.25
+# Reject YOLO candidate when its center jumps too far from previous accepted bbox center.
+# Value is normalized by frame diagonal length.
+LABEL_YOLO_MAX_CENTER_JUMP_RATIO = 0.30
+
 
 
 

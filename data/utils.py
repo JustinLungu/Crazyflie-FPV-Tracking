@@ -1,8 +1,11 @@
 from pathlib import Path
 from datetime import datetime
+import math
 import time
 from constants import *
 import cv2
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 ################################ RECORDING DATASET #################################
 
@@ -122,6 +125,133 @@ def clamp_bbox(x, y, w, h, W, H):
     w = max(1, min(int(w), W - x))
     h = max(1, min(int(h), H - y))
     return x, y, w, h
+
+
+def resolve_repo_path(path_like: str) -> Path:
+    path = Path(path_like)
+    return path if path.is_absolute() else (REPO_ROOT / path)
+
+
+def _candidate_class_tokens(class_name: str) -> list[str]:
+    safe = sanitize_class_folder_name(class_name).lower()
+    tokens: list[str] = [safe]
+    for suffix in ("_drone", "-drone"):
+        if safe.endswith(suffix):
+            trimmed = safe[: -len(suffix)].rstrip("_-")
+            if trimmed:
+                tokens.append(trimmed)
+    if safe.startswith("drone_"):
+        tokens.append(safe[len("drone_"):])
+    deduped: list[str] = []
+    for token in tokens:
+        if token and token not in deduped:
+            deduped.append(token)
+    return deduped
+
+
+def _discover_best_pt_in_dir(model_dir: Path) -> Path | None:
+    direct = model_dir / "weights" / "best.pt"
+    if direct.exists():
+        return direct
+    flat = model_dir / "best.pt"
+    if flat.exists():
+        return flat
+
+    candidates = [p for p in model_dir.rglob("best.pt") if p.is_file()]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
+def find_labeling_yolo_weights(class_name: str, models_root: str) -> Path | None:
+    root = resolve_repo_path(models_root)
+    if not root.exists() or not root.is_dir():
+        return None
+
+    tokens = _candidate_class_tokens(class_name)
+
+    # First pass: exact directory name match.
+    for token in tokens:
+        direct_dir = root / token
+        if direct_dir.is_dir():
+            weights = _discover_best_pt_in_dir(direct_dir)
+            if weights is not None:
+                return weights
+
+    # Second pass: partial match in directory name (e.g. class token embedded in run folder name).
+    matched_dirs = []
+    for subdir in root.iterdir():
+        if not subdir.is_dir():
+            continue
+        name = subdir.name.lower()
+        if any(token in name for token in tokens):
+            matched_dirs.append(subdir)
+
+    if not matched_dirs:
+        return None
+
+    matched_dirs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    for model_dir in matched_dirs:
+        weights = _discover_best_pt_in_dir(model_dir)
+        if weights is not None:
+            return weights
+    return None
+
+
+def load_labeling_yolo_model(weights_path: Path):
+    try:
+        from ultralytics import YOLO
+    except Exception as exc:
+        raise RuntimeError(
+            "Ultralytics is required for YOLO-assisted labeling but could not be imported."
+        ) from exc
+    return YOLO(str(weights_path))
+
+
+def yolo_best_detection_xywh(yolo_model, frame_bgr, conf_threshold: float) -> tuple[int, int, int, int, float] | None:
+    h, w = frame_bgr.shape[:2]
+    results = yolo_model.predict(frame_bgr, conf=float(conf_threshold), verbose=False)
+    best: tuple[int, int, int, int, float] | None = None
+
+    for result in results:
+        boxes = getattr(result, "boxes", None)
+        if boxes is None or len(boxes) == 0:
+            continue
+
+        xyxy_list = boxes.xyxy.cpu().tolist()
+        conf_list = boxes.conf.cpu().tolist() if getattr(boxes, "conf", None) is not None else [0.0] * len(xyxy_list)
+
+        for xyxy, conf_raw in zip(xyxy_list, conf_list):
+            x1, y1, x2, y2 = map(float, xyxy[:4])
+            conf = float(conf_raw)
+            x = int(round(x1))
+            y = int(round(y1))
+            bw = int(round(x2 - x1))
+            bh = int(round(y2 - y1))
+            x, y, bw, bh = clamp_bbox(x, y, bw, bh, w, h)
+            if best is None or conf > best[4]:
+                best = (x, y, bw, bh, conf)
+    return best
+
+
+def bbox_center(box: tuple[int, int, int, int]) -> tuple[float, float]:
+    x, y, w, h = box
+    return x + (w / 2.0), y + (h / 2.0)
+
+
+def bbox_center_jump_ratio(
+    prev_box: tuple[int, int, int, int],
+    next_box: tuple[int, int, int, int],
+    frame_w: int,
+    frame_h: int,
+) -> float:
+    prev_cx, prev_cy = bbox_center(prev_box)
+    next_cx, next_cy = bbox_center(next_box)
+    dist = math.hypot(next_cx - prev_cx, next_cy - prev_cy)
+    diag = math.hypot(float(frame_w), float(frame_h))
+    if diag <= 0:
+        return 0.0
+    return dist / diag
 
 
 def yolo_line(class_id, x, y, w, h, W, H):

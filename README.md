@@ -164,11 +164,18 @@ At minimum update:
 ./scripts/label_video.sh
 ```
 
+If class-matched weights are present under `yolo_best_models/`, labeling can use YOLO as primary bbox source and CSRT as fallback. Configure with:
+- `LABEL_YOLO_BEST_MODELS_DIR`
+- `LABEL_YOLO_ENABLED_AT_START`
+- `LABEL_YOLO_CONF_THRESHOLD`
+- `LABEL_YOLO_MAX_CENTER_JUMP_RATIO`
+
 ### 3. Controls
 
 - `q`: quit
 - `p`: pause/resume
 - `r`: redraw ROI and reinitialize tracker
+- `y`: toggle YOLO assist on/off (when compatible weights are loaded)
 
 ### 4. Label output structure
 

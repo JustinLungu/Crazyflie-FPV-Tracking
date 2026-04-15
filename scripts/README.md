@@ -26,7 +26,7 @@ From anywhere:
 - `live_view.sh`: live camera preview (`setting_up_camera/get_visual.py`)
 - `capture_images.sh`: capture image session (`data/images_get_data.py`)
 - `capture_video.sh`: capture video session (`data/videos_get_data.py`)
-- `label_video.sh`: tracker-assisted labeling (`data/track_label_video.py`)
+- `label_video.sh`: tracker labeling with optional YOLO assist toggle (`data/track_label_video.py`)
 - `review_labels.sh`: interactive label review (`data/view_labeling.py`)
 - `create_dataset.sh`: merge label sessions (`data/create_dataset.py`)
 - `prepare_yolo_dataset.sh`: build YOLO split dataset (`data/prepare_yolo_dataset.py`)
