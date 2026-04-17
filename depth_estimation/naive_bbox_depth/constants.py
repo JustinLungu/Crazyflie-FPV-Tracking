@@ -8,7 +8,7 @@ IMAGE_PATH = "data/labels/" + DRONE_NAME + "/" + DRONE_NAME + "_yolo/images/trai
 # - "live": run live camera inference
 NAIVE_RUN_MODE = "image"
 
-YOLO_CONF_THRESHOLD = 0.5
+YOLO_CONF_THRESHOLD = 0.4
 
 # Trained brushless model weights.
 MODEL_NAME = "brushless_drone_yolo26s_20260322_221846"
@@ -48,7 +48,7 @@ NAIVE_SHOW_RELATIVE_OVERLAY_ON_FRAME = False
 NAIVE_Y_AXIS_CONVENTION = "up"
 
 # Camera settings (for live mode).
-DEVICE = "/dev/video0"
+DEVICE = "/dev/video2"
 WIDTH, HEIGHT = 640, 480
 FPS_HINT = 30
 FOURCC = "MJPG"
@@ -117,7 +117,7 @@ NAIVE_GATING_CHECK_Y_JUMP = False
 
 
 # Thresholds (starting points; tune per setup/session).
-NAIVE_GATING_MIN_CONF_FOR_CONTROL = 0.60
+NAIVE_GATING_MIN_CONF_FOR_CONTROL = 0.50
 NAIVE_GATING_MIN_BBOX_WIDTH_PX = 8.0
 NAIVE_GATING_MAX_VALID_DISTANCE_M = 2.0
 NAIVE_GATING_BORDER_MARGIN_PX = 5

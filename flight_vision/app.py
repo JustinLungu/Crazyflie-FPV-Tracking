@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from threading import Event, Thread
+from typing import TYPE_CHECKING
 
-from drone_control.start_drone import DroneControlApp
-from drone_control.joystick.teleoperation import TeleoperationController
 from flight_vision.camera_sources import ReceiverCameraSpec, create_receiver_camera_source
 from flight_vision.constants import (
     FLIGHT_DRONE_URI,
@@ -40,6 +39,9 @@ from inference.constants import (
     WINDOW_NAME,
 )
 
+if TYPE_CHECKING:
+    from drone_control.start_drone import DroneControlApp
+
 
 class ConcurrentFlightVisionApp:
     """
@@ -53,13 +55,21 @@ class ConcurrentFlightVisionApp:
 
     def __init__(
         self,
+        *,
+        enable_drone_control: bool = True,
         drone_control_app: DroneControlApp | None = None,
     ) -> None:
+        self.enable_drone_control = enable_drone_control
         self._mission_name = FLIGHT_MISSION
+        self.drone_control_app: DroneControlApp | None = None
+
         if drone_control_app is not None:
             self.drone_control_app = drone_control_app
             self._mission_name = None
-        else:
+        elif self.enable_drone_control:
+            from drone_control.joystick.teleoperation import TeleoperationController
+            from drone_control.start_drone import DroneControlApp
+
             teleop = TeleoperationController(uri=FLIGHT_DRONE_URI)
             self.drone_control_app = DroneControlApp(
                 mission=FLIGHT_MISSION,
@@ -106,6 +116,14 @@ class ConcurrentFlightVisionApp:
         )
 
     def run(self) -> None:
+        if not self.enable_drone_control:
+            # Vision-only mode: useful for camera/model checks without radio hardware.
+            self.vision_runtime.run(stop_event=Event())
+            return
+
+        if self.drone_control_app is None:
+            raise RuntimeError("Drone control is enabled but DroneControlApp was not initialized.")
+
         stop_event = Event()
         vision_started_event = Event()
         vision_error: list[BaseException] = []
@@ -136,6 +154,12 @@ class ConcurrentFlightVisionApp:
 
         try:
             self.drone_control_app.run(mission_name=self._mission_name)
+        except Exception as exc:
+            if "Crazyradio Dongle" in str(exc):
+                raise RuntimeError(
+                    "Crazyradio dongle not detected. Plug in the dongle or run with --vision-only."
+                ) from exc
+            raise
         finally:
             stop_event.set()
             vision_thread.join(timeout=2.0)
