@@ -27,7 +27,6 @@ from demos.drone_follower.constants import (
     DEMO_FOLLOW_TARGET_DISTANCE_M,
     DEMO_FOLLOW_VERTICAL_DEADBAND_M,
     DEMO_FOLLOW_YAW_DEADBAND_DEG,
-    DEMO_MISSION_COMPLETE_ON_PREVIEW_QUIT,
     DEMO_PREVIEW_WINDOW_NAME,
     DEMO_SHOW_PREVIEW,
     KEY_PREVIEW_QUIT,
@@ -77,7 +76,6 @@ class DroneFollowerMission(AutonomousMission):
         max_yawrate_deg_s: float = DEMO_FOLLOW_MAX_YAWRATE_DEG_S,
         yaw_deadband_deg: float = DEMO_FOLLOW_YAW_DEADBAND_DEG,
         show_preview: bool = DEMO_SHOW_PREVIEW,
-        mission_complete_on_preview_quit: bool = DEMO_MISSION_COMPLETE_ON_PREVIEW_QUIT,
         pipeline_factory: DepthPipelineFactory | None = None,
     ):
         self.target_distance_m = float(target_distance_m)
@@ -99,7 +97,6 @@ class DroneFollowerMission(AutonomousMission):
         self.yaw_deadband_deg = float(yaw_deadband_deg)
 
         self.show_preview = bool(show_preview)
-        self.mission_complete_on_preview_quit = bool(mission_complete_on_preview_quit)
         self.pipeline_factory = pipeline_factory or NaiveBBoxDepthPipeline
 
     @staticmethod
@@ -265,6 +262,21 @@ class DroneFollowerMission(AutonomousMission):
         print("CV ready. Engaging flight control.")
         return frame_idx, False
 
+    def _land_on_preview_quit(self, ctx: TakeoverContext) -> None:
+        # Force a graceful stop path: hover-stop then land before full shutdown.
+        if not getattr(ctx.teleop, "flying", False):
+            return
+
+        print("Preview quit requested: landing before exit.")
+        try:
+            ctx.stop(0.15)
+        except Exception:
+            pass
+        try:
+            ctx.teleop.land()
+        except Exception as exc:
+            print(f"Warning: land request on preview quit failed: {exc}")
+
     def run(self, ctx: TakeoverContext) -> bool:
         print("Demo mission: drone_follower")
         print("Safety: touch joystick/button any time for teleop takeover.")
@@ -276,14 +288,16 @@ class DroneFollowerMission(AutonomousMission):
         self._last_pose_by_method: dict[str, dict[str, float]] = {}
         self._last_t = time.perf_counter()
         self._loop_fps = 0.0
+        has_taken_off = False
 
         try:
             frame_idx, quit_requested = self._warmup_cv(cap, pipeline, frame_idx, method_name)
             if quit_requested:
-                return bool(self.mission_complete_on_preview_quit)
+                return True
 
             if ctx.ensure_takeoff(self.takeoff_height_m):
                 return False
+            has_taken_off = True
 
             while True:
                 ok, frame_bgr = cap.read()
@@ -309,7 +323,9 @@ class DroneFollowerMission(AutonomousMission):
                         pipeline=pipeline,
                     )
                     if should_quit:
-                        return bool(self.mission_complete_on_preview_quit)
+                        if has_taken_off:
+                            self._land_on_preview_quit(ctx)
+                        return True
         finally:
             cap.release()
             if self.show_preview:

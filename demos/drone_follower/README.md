@@ -37,7 +37,7 @@ Main knobs:
 
 ## Live Controls
 
-- `q` or `ESC`: close preview / finish mission
+- `q` or `ESC`: request safe land, then close preview and exit mission
 - `g`: toggle gating (if selected depth method supports gating)
 - any joystick activity: takeover from autonomy to teleop
 
