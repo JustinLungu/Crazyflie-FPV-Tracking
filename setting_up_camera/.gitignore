@@ -1,0 +1,5 @@
+# Camera stress test generated artifacts
+camera_stress_tests/runs/
+camera_stress_tests/test_plan.csv
+camera_stress_tests/campaign_summary.csv
+camera_stress_tests/campaign_summary.md

@@ -49,6 +49,7 @@ From anywhere:
 - `flight_vision.sh`: run drone control + live YOLO in parallel (`flight_vision/main.py`, supports `--vision-only` for no-radio checks)
 - `upload_backup.sh`: upload raw/labels backups to Drive (`data/upload_data_drive.py`)
 - `run_tests.sh`: run system/integration test suite (`tests/test_*.py`)
+- `camera_stress_tests.sh`: launcher menu for camera stress workflow (build plan, run tests, analyze latest/all, summarize) (`setting_up_camera/camera_stress_tests/*.py`)
 
 ## Notes
 

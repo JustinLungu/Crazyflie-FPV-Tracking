@@ -132,7 +132,7 @@ NAIVE_GATING_SHOW_REJECTION_OVERLAY = True
 ####################### Session Review Constants (recorded test session playback) ########################################
 
 # Must point to one session folder containing images/.
-NAIVE_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_164310"
+NAIVE_REVIEW_SESSION_DIR = "data/labels/brushless_drone/all_data/test/label_session_20260407_162517"
 NAIVE_REVIEW_WINDOW_NAME = "Naive Depth Session Review"
 NAIVE_REVIEW_START_PAUSED = False
 NAIVE_REVIEW_DELAY_S = 0.15
