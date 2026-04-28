@@ -97,6 +97,8 @@ def format_metric_text(outputs: list[LiveFrameOutput]) -> list[str]:
             parts.append(f"center={out.metrics['center_depth']:.3f}")
         if "distance_m" in out.metrics:
             parts.append(f"dist={out.metrics['distance_m']:.3f}m")
+        if "detection_source" in out.metrics:
+            parts.append(f"src={out.metrics['detection_source']}")
         if "infer_ms" in out.metrics:
             parts.append(f"{out.metrics['infer_ms']:.1f}ms")
         lines.append(" | ".join(parts))

@@ -72,6 +72,20 @@ from depth_estimation.naive_bbox_depth.utils import (
     resolve_repo_path,
 )
 from depth_estimation.pipeline_base import LiveDepthPipeline, LiveFrameOutput
+from inference.constants import (
+    INFER_FAILSAFE_TRACKER_ENABLED,
+    INFER_FAILSAFE_TRACKER_MAX_FRAMES,
+    INFER_FAILSAFE_TRACKER_MAX_CENTER_JUMP_PX,
+    INFER_FAILSAFE_TRACKER_MIN_BBOX_AREA_PX,
+    INFER_FAILSAFE_TRACKER_REINIT_ON_DETECTION,
+    INFER_FAILSAFE_TRACKER_TYPE,
+)
+from inference.tracker_failsafe import (
+    DetectionCandidate,
+    DetectionFailsafeTracker,
+    extract_yolo_detections,
+    rank_detections,
+)
 
 
 class NaiveBBoxDepthPipeline(LiveDepthPipeline):
@@ -125,6 +139,12 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         gating_max_x_jump_m: float = NAIVE_GATING_MAX_X_JUMP_M,
         gating_max_y_jump_m: float = NAIVE_GATING_MAX_Y_JUMP_M,
         gating_show_rejection_overlay: bool = NAIVE_GATING_SHOW_REJECTION_OVERLAY,
+        failsafe_tracker_enabled: bool = INFER_FAILSAFE_TRACKER_ENABLED,
+        failsafe_tracker_type: str = INFER_FAILSAFE_TRACKER_TYPE,
+        failsafe_tracker_max_frames: int = INFER_FAILSAFE_TRACKER_MAX_FRAMES,
+        failsafe_tracker_min_bbox_area_px: float = INFER_FAILSAFE_TRACKER_MIN_BBOX_AREA_PX,
+        failsafe_tracker_max_center_jump_px: float | None = INFER_FAILSAFE_TRACKER_MAX_CENTER_JUMP_PX,
+        failsafe_tracker_reinit_on_detection: bool = INFER_FAILSAFE_TRACKER_REINIT_ON_DETECTION,
     ):
         self.model_path = model_path
         self.conf_threshold = conf_threshold
@@ -175,6 +195,14 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         self.gating_max_x_jump_m = float(gating_max_x_jump_m)
         self.gating_max_y_jump_m = float(gating_max_y_jump_m)
         self.gating_show_rejection_overlay = bool(gating_show_rejection_overlay)
+        self._failsafe_tracker = DetectionFailsafeTracker(
+            enabled=failsafe_tracker_enabled,
+            tracker_type=failsafe_tracker_type,
+            max_fallback_frames=failsafe_tracker_max_frames,
+            min_bbox_area_px=failsafe_tracker_min_bbox_area_px,
+            max_center_jump_px=failsafe_tracker_max_center_jump_px,
+            reinitialize_on_detection=failsafe_tracker_reinit_on_detection,
+        )
 
         distance_mode = self.filter_mode if self.filter_distance else "none"
         center_mode = self.filter_mode if self.filter_center else "none"
@@ -268,6 +296,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         raw: dict[str, float],
         xyxy,
         frame_shape,
+        candidate_source: str = "yolo",
     ) -> tuple[bool, list[str], dict[str, float] | None]:
         if not self.gating_enabled:
             return True, [], None
@@ -277,8 +306,13 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         raw_width = float(raw["raw_bbox_width_px"])
         raw_distance = float(raw["raw_distance_m"])
         x1, y1, x2, y2 = map(float, xyxy)
+        is_tracker_candidate = str(candidate_source).startswith("tracker_")
 
-        if self.gating_check_confidence and conf < self.gating_min_conf_for_control:
+        if (
+            self.gating_check_confidence
+            and not is_tracker_candidate
+            and conf < self.gating_min_conf_for_control
+        ):
             reasons.append(f"low_conf<{self.gating_min_conf_for_control:.2f}")
 
         if self.gating_check_min_width and raw_width < self.gating_min_bbox_width_px:
@@ -393,25 +427,12 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         self,
         results,
         max_candidates: int | None = None,
-    ) -> tuple[list[tuple], int]:
-        candidates = []
-
-        for result in results:
-            if result.boxes is None:
-                continue
-            for box in result.boxes:
-                conf = float(box.conf[0].item())
-                xyxy = box.xyxy[0].cpu().numpy()
-                candidates.append((xyxy, conf))
-
-        if not candidates:
-            return [], 0
-
-        candidates.sort(key=lambda item: item[1], reverse=True)
+    ) -> tuple[list[DetectionCandidate], int]:
+        candidates = rank_detections(extract_yolo_detections(results))
         total = len(candidates)
         if max_candidates is None:
             return candidates, total
-        return candidates[: max(1, int(max_candidates))], total
+        return rank_detections(candidates, max_candidates=max_candidates), total
 
     def _predict(self, source):
         t0 = time.perf_counter()
@@ -433,6 +454,32 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         metrics["process_fps"] = round(1000.0 / process_ms, 2) if process_ms > 0.0 else 0.0
         infer_ms = float(metrics.get("infer_ms", 0.0))
         metrics["infer_fps"] = round(1000.0 / infer_ms, 2) if infer_ms > 0.0 else 0.0
+
+    def _failsafe_metrics(self) -> dict[str, float | int | str]:
+        return {
+            "failsafe_tracker_enabled": 1 if self._failsafe_tracker.enabled else 0,
+            "failsafe_tracker_active": 1 if self._failsafe_tracker.is_active else 0,
+            "failsafe_tracker_type": self._failsafe_tracker.tracker_type,
+            "failsafe_tracker_age_frames": int(self._failsafe_tracker.fallback_age_frames),
+            "failsafe_tracker_error": self._failsafe_tracker.unavailable_reason or "",
+            "failsafe_tracker_rejection": self._failsafe_tracker.last_rejection_reason,
+        }
+
+    def _candidate_source_metrics(
+        self,
+        candidate: DetectionCandidate,
+    ) -> dict[str, float | int | str]:
+        return {
+            "detection_source": candidate.source,
+            "tracker_age_frames": int(candidate.tracker_age_frames),
+        }
+
+    def _seed_failsafe_tracker(self, frame_bgr, candidate: DetectionCandidate) -> None:
+        if candidate.source == "yolo":
+            self._failsafe_tracker.initialize(frame_bgr, candidate)
+
+    def _tracker_fallback_candidate(self, frame_bgr) -> DetectionCandidate | None:
+        return self._failsafe_tracker.update(frame_bgr)
 
     def _raw_measurement_from_detection(self, xyxy, conf: float) -> dict[str, float]:
         estimate = estimate_distance_from_bbox(
@@ -756,6 +803,11 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         all_candidates, total_detections = self._ranked_detections(results, max_candidates=None)
         active_candidate_limit = self.gating_max_candidates if self.gating_enabled else 1
         candidates = all_candidates[: max(1, int(active_candidate_limit))]
+        if not candidates:
+            tracker_candidate = self._tracker_fallback_candidate(frame_bgr)
+            if tracker_candidate is not None:
+                candidates = [tracker_candidate]
+
         metrics: dict[str, float | int | str] = {
             "infer_ms": round(infer_ms, 2),
             "detection_count": int(len(candidates)),
@@ -763,12 +815,15 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             "candidate_pool": int(len(candidates)),
             "candidate_limit": int(active_candidate_limit),
         }
+        metrics.update(self._failsafe_metrics())
 
         if not candidates:
             metrics.update(self._missing_detection_metrics())
             metrics["gating_enabled"] = 1 if self.gating_enabled else 0
             metrics["gating_passed"] = -1
             metrics["gating_reasons"] = "no_detection"
+            metrics["detection_source"] = "none"
+            metrics.update(self._failsafe_metrics())
             self._annotate_missing_detection(display_frame, metrics)
             self._draw_relative_overlay(display_frame, metrics)
             self._attach_runtime_metrics(metrics, process_t0)
@@ -776,8 +831,8 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
 
         # Fast path: gating disabled -> use top-confidence candidate only.
         if not self.gating_enabled:
-            xyxy, conf = candidates[0]
-            raw = self._raw_measurement_from_detection(xyxy, conf)
+            candidate = candidates[0]
+            raw = self._raw_measurement_from_detection(candidate.xyxy, candidate.confidence)
             metrics.update(self._filtered_measurement_from_raw(raw))
             metrics["detection_count"] = int(len(candidates))
             metrics["yolo_detection_count"] = int(total_detections)
@@ -786,15 +841,25 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
             metrics["gating_enabled"] = 0
             metrics["gating_passed"] = -1
             metrics["gating_reasons"] = "disabled"
-            self._annotate_best_detection(display_frame, xyxy, metrics)
+            metrics.update(self._candidate_source_metrics(candidate))
+            self._seed_failsafe_tracker(frame_bgr, candidate)
+            metrics.update(self._failsafe_metrics())
+            self._annotate_best_detection(display_frame, candidate.xyxy, metrics)
             self._draw_relative_overlay(display_frame, metrics)
             self._attach_runtime_metrics(metrics, process_t0)
             return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
 
-        rejected: list[tuple[int, object, dict[str, float], list[str], dict[str, float] | None]] = []
-        for rank, (xyxy, conf) in enumerate(candidates, start=1):
-            raw = self._raw_measurement_from_detection(xyxy, conf)
-            gate_ok, gate_reasons, raw_rel = self._evaluate_gating(raw, xyxy, frame_bgr.shape)
+        rejected: list[
+            tuple[int, DetectionCandidate, dict[str, float], list[str], dict[str, float] | None]
+        ] = []
+        for rank, candidate in enumerate(candidates, start=1):
+            raw = self._raw_measurement_from_detection(candidate.xyxy, candidate.confidence)
+            gate_ok, gate_reasons, raw_rel = self._evaluate_gating(
+                raw,
+                candidate.xyxy,
+                frame_bgr.shape,
+                candidate_source=candidate.source,
+            )
             if gate_ok:
                 metrics.update(self._filtered_measurement_from_raw(raw))
                 metrics["detection_count"] = int(len(candidates))
@@ -804,14 +869,50 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
                 metrics["gating_enabled"] = 1
                 metrics["gating_passed"] = 1
                 metrics["gating_reasons"] = ""
-                self._annotate_best_detection(display_frame, xyxy, metrics)
+                metrics.update(self._candidate_source_metrics(candidate))
+                self._seed_failsafe_tracker(frame_bgr, candidate)
+                metrics.update(self._failsafe_metrics())
+                self._annotate_best_detection(display_frame, candidate.xyxy, metrics)
                 self._draw_relative_overlay(display_frame, metrics)
                 self._attach_runtime_metrics(metrics, process_t0)
                 return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
-            rejected.append((rank, xyxy, raw, gate_reasons, raw_rel))
+            rejected.append((rank, candidate, raw, gate_reasons, raw_rel))
+
+        # If YOLO was present but all candidates were rejected, try the tracker
+        # seeded by the last accepted bbox before falling back to held/stale state.
+        if candidates and all(candidate.source == "yolo" for candidate in candidates):
+            tracker_candidate = self._tracker_fallback_candidate(frame_bgr)
+            if tracker_candidate is not None:
+                tracker_rank = len(candidates) + 1
+                raw = self._raw_measurement_from_detection(
+                    tracker_candidate.xyxy,
+                    tracker_candidate.confidence,
+                )
+                gate_ok, gate_reasons, raw_rel = self._evaluate_gating(
+                    raw,
+                    tracker_candidate.xyxy,
+                    frame_bgr.shape,
+                    candidate_source=tracker_candidate.source,
+                )
+                if gate_ok:
+                    metrics.update(self._filtered_measurement_from_raw(raw))
+                    metrics["detection_count"] = 1
+                    metrics["yolo_detection_count"] = int(total_detections)
+                    metrics["candidate_pool"] = int(len(candidates) + 1)
+                    metrics["selected_candidate_rank"] = int(tracker_rank)
+                    metrics["gating_enabled"] = 1
+                    metrics["gating_passed"] = 1
+                    metrics["gating_reasons"] = ""
+                    metrics.update(self._candidate_source_metrics(tracker_candidate))
+                    metrics.update(self._failsafe_metrics())
+                    self._annotate_best_detection(display_frame, tracker_candidate.xyxy, metrics)
+                    self._draw_relative_overlay(display_frame, metrics)
+                    self._attach_runtime_metrics(metrics, process_t0)
+                    return LiveFrameOutput(method=self.name, frame_bgr=display_frame, metrics=metrics)
+                rejected.append((tracker_rank, tracker_candidate, raw, gate_reasons, raw_rel))
 
         # All top-K candidates failed gating -> hold/stale/lost fallback.
-        best_rank, best_xyxy, best_raw, best_reasons, best_raw_rel = rejected[0]
+        best_rank, best_candidate, best_raw, best_reasons, best_raw_rel = rejected[0]
         metrics.update(self._missing_detection_metrics())
         metrics.update(
             {
@@ -834,6 +935,8 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
                 "best_rejected_rank": int(best_rank),
             }
         )
+        metrics.update(self._candidate_source_metrics(best_candidate))
+        metrics.update(self._failsafe_metrics())
         if best_raw_rel is not None:
             metrics.update(
                 {
@@ -845,7 +948,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
                 }
             )
 
-        self._annotate_rejected_detection(display_frame, best_xyxy, best_reasons, raw=best_raw)
+        self._annotate_rejected_detection(display_frame, best_candidate.xyxy, best_reasons, raw=best_raw)
         self._annotate_missing_detection(display_frame, metrics)
         self._draw_relative_overlay(display_frame, metrics)
         self._attach_runtime_metrics(metrics, process_t0)
@@ -865,6 +968,16 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         cap = self._open_camera(device, width, height, fps_hint, fourcc, buffer_size)
         frame_count = 0
         print("Live naive depth started.")
+        print(
+            "Tracker failsafe: "
+            f"{'ON' if self._failsafe_tracker.enabled else 'OFF'}"
+            + (
+                f" ({self._failsafe_tracker.tracker_type}, "
+                f"max {self._failsafe_tracker.max_fallback_frames} frames)"
+                if self._failsafe_tracker.enabled
+                else ""
+            )
+        )
         print("Controls: q/ESC quit, g toggle gating.")
 
         try:
@@ -913,6 +1026,7 @@ class NaiveBBoxDepthPipeline(LiveDepthPipeline):
         self._center_x_filter.reset()
         self._center_y_filter.reset()
         self._width_filter.reset()
+        self._failsafe_tracker.reset()
         self._missed_frames = 0
         self._last_estimate_metrics = None
 

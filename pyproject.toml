@@ -25,3 +25,9 @@ dependencies = [
     "ultralytics>=8.3.0",
     "wandb>=0.25.0",
 ]
+
+[tool.uv]
+# Ultralytics depends on opencv-python, but this project needs OpenCV contrib
+# trackers such as CSRT. Installing both wheels is unsafe because they provide
+# the same cv2 module; keep opencv-contrib-python as the sole OpenCV wheel.
+exclude-dependencies = ["opencv-python"]

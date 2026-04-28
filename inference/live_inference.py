@@ -3,6 +3,12 @@ import time
 import cv2
 
 from constants import *
+from tracker_failsafe import (
+    DetectionFailsafeTracker,
+    draw_detection_candidate,
+    extract_yolo_detections,
+    rank_detections,
+)
 from utils import *
 
 
@@ -28,6 +34,18 @@ def draw_overlay(frame, detection_count: int, infer_ms: float, display_fps: floa
 
 def main() -> None:
     model = load_yolo_model(INFER_MODEL_WEIGHTS)
+    failsafe_tracker = DetectionFailsafeTracker(
+        enabled=INFER_FAILSAFE_TRACKER_ENABLED,
+        tracker_type=INFER_FAILSAFE_TRACKER_TYPE,
+        max_fallback_frames=INFER_FAILSAFE_TRACKER_MAX_FRAMES,
+        min_bbox_area_px=INFER_FAILSAFE_TRACKER_MIN_BBOX_AREA_PX,
+        max_center_jump_px=INFER_FAILSAFE_TRACKER_MAX_CENTER_JUMP_PX,
+        reinitialize_on_detection=INFER_FAILSAFE_TRACKER_REINIT_ON_DETECTION,
+    )
+    failsafe_label = (
+        INFER_FAILSAFE_TRACKER_LABEL.strip()
+        or f"{INFER_FAILSAFE_TRACKER_TYPE.upper()} failsafe"
+    )
     cap = open_camera(
         device=CAMERA_DEVICE,
         width=CAMERA_WIDTH,
@@ -39,6 +57,16 @@ def main() -> None:
     print(f"Loaded model: {INFER_MODEL_WEIGHTS}")
     print(f"Camera: {CAMERA_DEVICE} ({CAMERA_WIDTH}x{CAMERA_HEIGHT})")
     print(f"Overlap suppression: {INFER_OVERLAP_SUPPRESSION_PERCENT:.1f}% overlap")
+    print(
+        "Tracker failsafe: "
+        f"{'on' if INFER_FAILSAFE_TRACKER_ENABLED else 'off'}"
+        + (
+            f" ({INFER_FAILSAFE_TRACKER_TYPE.upper()}, "
+            f"max {INFER_FAILSAFE_TRACKER_MAX_FRAMES} frames)"
+            if INFER_FAILSAFE_TRACKER_ENABLED
+            else ""
+        )
+    )
     print("Press q or ESC to quit.")
 
     prev_loop_time = time.perf_counter()
@@ -65,13 +93,29 @@ def main() -> None:
 
             result = results[0]
             apply_overlap_suppression_to_result(result, overlap_threshold=overlap_threshold)
+            yolo_detections = rank_detections(extract_yolo_detections(result))
+            fallback_detection = None
+            if yolo_detections:
+                failsafe_tracker.initialize(frame, yolo_detections[0])
+            else:
+                fallback_detection = failsafe_tracker.update(frame)
 
             annotated = result.plot(
                 labels=SHOW_LABELS,
                 conf=SHOW_CONFIDENCE,
                 line_width=BOX_LINE_WIDTH,
             )
+            if fallback_detection is not None:
+                draw_detection_candidate(
+                    annotated,
+                    fallback_detection,
+                    color=INFER_FAILSAFE_TRACKER_BOX_COLOR,
+                    label=failsafe_label,
+                    line_width=BOX_LINE_WIDTH,
+                )
             detection_count = 0 if result.boxes is None else len(result.boxes)
+            if fallback_detection is not None:
+                detection_count = 1
             now = time.perf_counter()
             loop_dt = max(1e-6, now - prev_loop_time)
             prev_loop_time = now

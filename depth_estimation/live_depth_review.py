@@ -121,6 +121,34 @@ def _method_lines(
     estimate_source = str(m.get("estimate_source", "none"))
     lines.append(f"Track state: {track_state}")
     lines.append(f"Estimate src: {estimate_source}")
+    detection_source = str(m.get("detection_source", "")).strip()
+    if detection_source:
+        lines.append(f"Detection src: {detection_source}")
+    if m.get("failsafe_tracker_enabled") is not None:
+        try:
+            tracker_enabled = int(m.get("failsafe_tracker_enabled", 0))
+            tracker_active = int(m.get("failsafe_tracker_active", 0))
+            tracker_age = int(m.get("failsafe_tracker_age_frames", 0))
+        except (TypeError, ValueError):
+            tracker_enabled = 0
+            tracker_active = 0
+            tracker_age = 0
+        tracker_type = str(m.get("failsafe_tracker_type", "")).strip()
+        tracker_error = str(m.get("failsafe_tracker_error", "")).strip()
+        tracker_rejection = str(m.get("failsafe_tracker_rejection", "")).strip()
+        tracker_status = "unavailable" if tracker_error else "active" if tracker_active else "idle"
+        if tracker_enabled:
+            lines.append(f"Failsafe: {tracker_type} {tracker_status} ({tracker_age})")
+            if tracker_error:
+                short_error = tracker_error
+                if "Available trackers in this environment:" in short_error:
+                    short_error = short_error.split("Available trackers in this environment:", 1)[1]
+                    short_error = "Available:" + short_error.split(". Install/", 1)[0]
+                if len(short_error) > 42:
+                    short_error = short_error[:39] + "..."
+                lines.append(f" - {short_error}")
+            elif tracker_rejection:
+                lines.append(f" - {tracker_rejection}")
 
     det = m.get("detection_count")
     yolo_det = m.get("yolo_detection_count")

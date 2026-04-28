@@ -29,6 +29,24 @@ INFER_DEVICE = 0  # Set "cpu" to run on CPU, 0 = GPU
 INFER_VERBOSE = False
 
 
+########################################## Tracker Failsafe ###############################################
+
+# Optional OpenCV tracker fallback for brief YOLO dropouts.
+# When enabled, the tracker is initialized from the latest accepted YOLO bbox.
+# If YOLO has no usable detection on later frames, the tracker can provide a
+# short-lived bbox estimate instead of immediately declaring the target lost.
+INFER_FAILSAFE_TRACKER_ENABLED = True
+INFER_FAILSAFE_TRACKER_TYPE = "CSRT"  # CSRT, KCF, MOSSE, MIL, etc. when available in OpenCV
+INFER_FAILSAFE_TRACKER_MAX_FRAMES = 20
+INFER_FAILSAFE_TRACKER_MIN_BBOX_AREA_PX = 25.0
+# Reject tracker updates whose bbox center leaves the previous accepted bbox
+# expanded by this many pixels in each direction. Set None to disable.
+INFER_FAILSAFE_TRACKER_MAX_CENTER_JUMP_PX = 50.0
+INFER_FAILSAFE_TRACKER_REINIT_ON_DETECTION = True
+INFER_FAILSAFE_TRACKER_BOX_COLOR = (0, 165, 255)
+INFER_FAILSAFE_TRACKER_LABEL = ""  # Empty => "<tracker type> failsafe"
+
+
 ########################################## Visualization Constants ########################################
 
 WINDOW_NAME = "Live Drone Inference"

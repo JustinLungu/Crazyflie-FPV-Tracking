@@ -102,12 +102,23 @@ def open_metrics_logger(session_dir: Path, log_dir: str):
             "track_state",
             "frames_since_detection",
             "estimate_source",
+            "detection_source",
             "is_stale",
             "filter_mode",
             "gating_enabled",
             "gating_passed",
             "gating_reasons",
             "detection_count",
+            "yolo_detection_count",
+            "candidate_pool",
+            "selected_candidate_rank",
+            "failsafe_tracker_enabled",
+            "failsafe_tracker_active",
+            "failsafe_tracker_type",
+            "failsafe_tracker_age_frames",
+            "failsafe_tracker_error",
+            "failsafe_tracker_rejection",
+            "tracker_age_frames",
             "confidence",
             "raw_bbox_width_px",
             "bbox_width_px",
@@ -152,12 +163,23 @@ def write_metrics_row(
             "track_state": metrics.get("track_state", ""),
             "frames_since_detection": metrics.get("frames_since_detection", ""),
             "estimate_source": metrics.get("estimate_source", ""),
+            "detection_source": metrics.get("detection_source", ""),
             "is_stale": metrics.get("is_stale", ""),
             "filter_mode": metrics.get("filter_mode", ""),
             "gating_enabled": metrics.get("gating_enabled", ""),
             "gating_passed": metrics.get("gating_passed", ""),
             "gating_reasons": metrics.get("gating_reasons", ""),
             "detection_count": metrics.get("detection_count", 0),
+            "yolo_detection_count": metrics.get("yolo_detection_count", ""),
+            "candidate_pool": metrics.get("candidate_pool", ""),
+            "selected_candidate_rank": metrics.get("selected_candidate_rank", ""),
+            "failsafe_tracker_enabled": metrics.get("failsafe_tracker_enabled", ""),
+            "failsafe_tracker_active": metrics.get("failsafe_tracker_active", ""),
+            "failsafe_tracker_type": metrics.get("failsafe_tracker_type", ""),
+            "failsafe_tracker_age_frames": metrics.get("failsafe_tracker_age_frames", ""),
+            "failsafe_tracker_error": metrics.get("failsafe_tracker_error", ""),
+            "failsafe_tracker_rejection": metrics.get("failsafe_tracker_rejection", ""),
+            "tracker_age_frames": metrics.get("tracker_age_frames", ""),
             "confidence": metrics.get("confidence", ""),
             "raw_bbox_width_px": metrics.get("raw_bbox_width_px", ""),
             "bbox_width_px": metrics.get("bbox_width_px", ""),
@@ -210,6 +232,7 @@ def compose_review_display(
 
     track_state = str(metrics.get("track_state", "unknown"))
     estimate_source = str(metrics.get("estimate_source", "none"))
+    detection_source = str(metrics.get("detection_source", "")).strip()
     detection_count = int(metrics.get("detection_count", 0))
 
     infer_ms = _as_float(metrics.get("infer_ms"))
@@ -231,6 +254,17 @@ def compose_review_display(
         gating_passed = int(metrics.get("gating_passed", -1))
     except (TypeError, ValueError):
         gating_passed = -1
+    try:
+        tracker_enabled = int(metrics.get("failsafe_tracker_enabled", 0))
+        tracker_active = int(metrics.get("failsafe_tracker_active", 0))
+        tracker_age = int(metrics.get("failsafe_tracker_age_frames", 0))
+    except (TypeError, ValueError):
+        tracker_enabled = 0
+        tracker_active = 0
+        tracker_age = 0
+    tracker_type = str(metrics.get("failsafe_tracker_type", "")).strip()
+    tracker_error = str(metrics.get("failsafe_tracker_error", "")).strip()
+    tracker_rejection = str(metrics.get("failsafe_tracker_rejection", "")).strip()
 
     gating_label = "OFF"
     if gating_enabled:
@@ -254,6 +288,7 @@ def compose_review_display(
                 f"conf: {_format_value(conf, 2)} "
                 f"raw/filt dist: {_format_value(raw_dist, 3)}/{_format_value(filt_dist, 3)} m"
             ),
+            f"src: {detection_source or estimate_source}",
             f"session: {session_name}",
             f"image: {image_name}",
         ]
@@ -289,6 +324,7 @@ def compose_review_display(
         (f"Frame: {index + 1}/{total}", text_color, 0.56),
         (f"Track state: {track_state}", text_color, 0.56),
         (f"Estimate src: {estimate_source}", text_color, 0.56),
+        (f"Detection src: {detection_source or 'n/a'}", text_color, 0.56),
         (f"Detections: {detection_count}", text_color, 0.56),
         (f"Inference: {_format_value(infer_ms, 1, ' ms')}", text_color, 0.56),
         (f"FPS (no delay): {_format_value(process_fps, 1)}", text_color, 0.56),
@@ -300,6 +336,19 @@ def compose_review_display(
             0.56,
         ),
     ]
+    if tracker_enabled:
+        tracker_status = "unavailable" if tracker_error else "active" if tracker_active else "idle"
+        lines.append((f"Failsafe: {tracker_type} {tracker_status} ({tracker_age})", text_color, 0.56))
+        if tracker_error:
+            short_error = tracker_error
+            if "Available trackers in this environment:" in short_error:
+                short_error = short_error.split("Available trackers in this environment:", 1)[1]
+                short_error = "Available:" + short_error.split(". Install/", 1)[0]
+            if len(short_error) > 42:
+                short_error = short_error[:39] + "..."
+            lines.append((f" - {short_error}", text_color, 0.50))
+        elif tracker_rejection:
+            lines.append((f" - {tracker_rejection}", text_color, 0.50))
 
     gating_reasons = str(metrics.get("gating_reasons", "")).strip()
     if gating_reasons:
