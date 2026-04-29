@@ -234,6 +234,7 @@ def compose_review_display(
     estimate_source = str(metrics.get("estimate_source", "none"))
     detection_source = str(metrics.get("detection_source", "")).strip()
     detection_count = int(metrics.get("detection_count", 0))
+    detection_label = detection_source or "n/a"
 
     infer_ms = _as_float(metrics.get("infer_ms"))
     process_fps = _as_float(metrics.get("process_fps"))
@@ -288,9 +289,8 @@ def compose_review_display(
                 f"conf: {_format_value(conf, 2)} "
                 f"raw/filt dist: {_format_value(raw_dist, 3)}/{_format_value(filt_dist, 3)} m"
             ),
-            f"src: {detection_source or estimate_source}",
+            f"src: {detection_source or estimate_source} ({detection_count})",
             f"session: {session_name}",
-            f"image: {image_name}",
         ]
         for i, line in enumerate(lines):
             cv2.putText(
@@ -323,9 +323,7 @@ def compose_review_display(
         (f"Mode: {status}", text_color, 0.56),
         (f"Frame: {index + 1}/{total}", text_color, 0.56),
         (f"Track state: {track_state}", text_color, 0.56),
-        (f"Estimate src: {estimate_source}", text_color, 0.56),
-        (f"Detection src: {detection_source or 'n/a'}", text_color, 0.56),
-        (f"Detections: {detection_count}", text_color, 0.56),
+        (f"Detection src: {detection_label} ({detection_count})", text_color, 0.56),
         (f"Inference: {_format_value(infer_ms, 1, ' ms')}", text_color, 0.56),
         (f"FPS (no delay): {_format_value(process_fps, 1)}", text_color, 0.56),
         (f"Delay: {delay_s:.2f} s", text_color, 0.56),
@@ -365,11 +363,6 @@ def compose_review_display(
             (f"Yaw err: {_format_value(yaw_deg, 1, ' deg')}", text_color, 0.56),
             ("", text_color, 0.56),
             (f"Session: {session_name}", text_color, 0.50),
-            (
-                "Image: " + (image_name if len(image_name) <= 30 else image_name[:27] + "..."),
-                text_color,
-                0.50,
-            ),
         ]
     )
 

@@ -118,12 +118,15 @@ def _method_lines(
         lines.append(f"Method: {out.method}")
 
     track_state = str(m.get("track_state", "unknown"))
-    estimate_source = str(m.get("estimate_source", "none"))
     lines.append(f"Track state: {track_state}")
-    lines.append(f"Estimate src: {estimate_source}")
     detection_source = str(m.get("detection_source", "")).strip()
-    if detection_source:
-        lines.append(f"Detection src: {detection_source}")
+    det = m.get("detection_count")
+    if detection_source or det is not None:
+        detection_label = detection_source or "n/a"
+        if det is not None:
+            lines.append(f"Detection src: {detection_label} ({det})")
+        else:
+            lines.append(f"Detection src: {detection_label}")
     if m.get("failsafe_tracker_enabled") is not None:
         try:
             tracker_enabled = int(m.get("failsafe_tracker_enabled", 0))
@@ -149,14 +152,6 @@ def _method_lines(
                 lines.append(f" - {short_error}")
             elif tracker_rejection:
                 lines.append(f" - {tracker_rejection}")
-
-    det = m.get("detection_count")
-    yolo_det = m.get("yolo_detection_count")
-    if det is not None:
-        if yolo_det is not None:
-            lines.append(f"Detections: {det} (YOLO: {yolo_det})")
-        else:
-            lines.append(f"Detections: {det}")
 
     infer_ms = _as_float(m.get("infer_ms"))
     if infer_ms is not None:
